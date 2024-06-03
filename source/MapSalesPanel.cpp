@@ -26,6 +26,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Government.h"
 #include "ItemInfoDisplay.h"
 #include "text/layout.hpp"
+#include "Planet.h"
 #include "PlayerInfo.h"
 #include "Point.h"
 #include "PointerShader.h"
@@ -327,7 +328,7 @@ void MapSalesPanel::DrawInfo() const
 
 bool MapSalesPanel::DrawHeader(Point &corner, const string &category)
 {
-	bool hide = collapsed.count(category);
+	const bool hide = collapsed.count(category);
 	if(!hidPrevious)
 		corner.Y() += 50.;
 	hidPrevious = hide;
@@ -384,6 +385,14 @@ void MapSalesPanel::Draw(Point &corner, const Sprite *sprite, int swizzle, bool 
 		if(isSelected)
 			FillShader::Fill(corner + .5 * blockSize, blockSize, selectionColor);
 
+		if (swizzle == -1)
+		{
+		  swizzle = selectedPlanet
+				? selectedPlanet->GetGovernment()->GetSwizzle()
+				: selectedSystem
+					? selectedSystem->GetGovernment()->GetSwizzle()
+					: -1;
+		}
 		DrawSprite(corner, sprite, swizzle);
 
 		const Color &mediumColor = *GameData::Colors().Get("medium");
