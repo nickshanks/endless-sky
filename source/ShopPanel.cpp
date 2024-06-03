@@ -151,7 +151,7 @@ void ShopPanel::Draw()
 		else
 		{
 			int swizzle = dragShip->CustomSwizzle() >= 0
-				? dragShip->CustomSwizzle() : GameData::PlayerGovernment()->GetSwizzle();
+				? dragShip->CustomSwizzle() : player.GetPlanet()->GetGovernment()->GetSwizzle();
 			SpriteShader::Draw(sprite, dragPoint, scale, swizzle);
 		}
 	}
@@ -168,7 +168,7 @@ void ShopPanel::Draw()
 
 
 
-void ShopPanel::DrawShip(const Ship &ship, const Point &center, bool isSelected)
+void ShopPanel::DrawShip(const Ship &ship, const Point &center, bool isSelected, bool isOwned)
 {
 	const Sprite *back = SpriteSet::Get(
 		isSelected ? "ui/shipyard selected" : "ui/shipyard unselected");
@@ -176,7 +176,11 @@ void ShopPanel::DrawShip(const Ship &ship, const Point &center, bool isSelected)
 
 	const Sprite *thumbnail = ship.Thumbnail();
 	const Sprite *sprite = ship.GetSprite();
-	int swizzle = ship.CustomSwizzle() >= 0 ? ship.CustomSwizzle() : GameData::PlayerGovernment()->GetSwizzle();
+	int swizzle = ship.CustomSwizzle() >= 0
+		? ship.CustomSwizzle()
+		: isOwned
+			? GameData::PlayerGovernment()->GetSwizzle()
+			: player.GetPlanet()->GetGovernment()->GetSwizzle();
 	if(thumbnail)
 		SpriteShader::Draw(thumbnail, center + Point(0., 10.), 1., swizzle);
 	else if(sprite)
@@ -764,7 +768,7 @@ void ShopPanel::DrawShipsSidebar()
 			}
 			else
 			{
-				int swizzle = ship->CustomSwizzle() >= 0 ? ship->CustomSwizzle() : GameData::PlayerGovernment()->GetSwizzle();
+				int swizzle = ship->CustomSwizzle() >= 0 ? ship->CustomSwizzle() : player.GetPlanet()->GetGovernment()->GetSwizzle();
 				SpriteShader::Draw(sprite, point, scale, swizzle);
 			}
 		}
@@ -799,7 +803,7 @@ void ShopPanel::DrawShipsSidebar()
 	{
 		point.Y() += SHIP_SIZE / 2;
 		point.X() = Screen::Right() - SIDEBAR_WIDTH / 2;
-		DrawShip(*playerShip, point, true);
+		DrawShip(*playerShip, point, false, true);
 
 		Point offset(SIDEBAR_WIDTH / -2, SHIP_SIZE / 2);
 		const int detailHeight = DrawPlayerShipInfo(point + offset);

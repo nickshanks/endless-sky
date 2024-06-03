@@ -70,14 +70,36 @@ const Sprite *MapShipyardPanel::CompareSprite() const
 
 int MapShipyardPanel::SelectedSpriteSwizzle() const
 {
-	return selected->CustomSwizzle();
+	int swizzle = selected->CustomSwizzle();
+	if (swizzle == -1 && onlyShowStorageHere)
+	{
+		swizzle = GameData::PlayerGovernment()->GetSwizzle();
+	}
+	else if (swizzle == -1)
+	{
+		swizzle = selectedPlanet
+			? selectedPlanet->GetGovernment()->GetSwizzle()
+			: selectedSystem
+				? selectedSystem->GetGovernment()->GetSwizzle()
+				: -1;
+	}
+	return swizzle;
 }
 
 
 
 int MapShipyardPanel::CompareSpriteSwizzle() const
 {
-	return compare->CustomSwizzle();
+	int swizzle = compare->CustomSwizzle();
+	if (swizzle == -1)
+	{
+		swizzle = selectedPlanet
+			? selectedPlanet->GetGovernment()->GetSwizzle()
+			: selectedSystem
+				? selectedSystem->GetGovernment()->GetSwizzle()
+				: -1;
+	}
+	return swizzle;
 }
 
 
@@ -200,7 +222,7 @@ void MapShipyardPanel::DrawItems()
 	{
 		const string &category = cat.Name();
 		auto it = catalog.find(category);
-		if(it == catalog.end())
+		if(it == catalog.end() || it->second.empty())
 			continue;
 
 		// Draw the header. If this category is collapsed, skip drawing the items.
@@ -249,7 +271,13 @@ void MapShipyardPanel::DrawItems()
 				: parkedInSystem == 1
 				? "1 ship parked"
 				: Format::Number(parkedInSystem) + " ships parked";
-			Draw(corner, sprite, ship->CustomSwizzle(), isForSale, ship == selected,
+
+			int swizzle = ship->CustomSwizzle();
+			if (swizzle == -1 && onlyShowStorageHere) {
+				swizzle = GameData::PlayerGovernment()->GetSwizzle();
+			}
+
+			Draw(corner, sprite, swizzle, isForSale, ship == selected,
 					ship->DisplayModelName(), price, info, parking_details);
 			list.push_back(ship);
 		}
