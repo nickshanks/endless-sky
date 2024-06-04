@@ -84,24 +84,15 @@ const ItemInfoDisplay &MapOutfitterPanel::CompareInfo() const
 
 
 
-const string &MapOutfitterPanel::KeyLabel(int index) const
+void MapOutfitterPanel::DrawKey(Information &info) const
 {
-	static const string OUTFIT[4] = {
-		"Has no outfitter",
-		"Has outfitter",
-		"Sells this outfit",
-		"Outfit in storage"
-	};
-	static const string MINE[4] = {
-		"Has no outfitter",
-		"Has outfitter",
-		"Mine this here",
-		"Mineral in storage"
-	};
+	const string condition = (selected && selected->Get("minable") > 0.)
+		? "is outfitters w/ minerals"
+		: "is outfitters";
 
-	if(selected && selected->Get("minable") > 0.)
-		return MINE[index];
-	return OUTFIT[index];
+	info.SetCondition(condition);
+
+	MapSalesPanel::DrawKey(info);
 }
 
 
