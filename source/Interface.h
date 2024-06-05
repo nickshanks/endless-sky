@@ -59,6 +59,7 @@ public:
 
 	// Get a named list.
 	const std::vector<double> &GetList(const std::string &name) const;
+	const std::vector<std::string> &GetStrings(const std::string &name) const;
 
 
 private:
@@ -250,6 +251,7 @@ private:
 	std::map<std::string, Element> points;
 	std::map<std::string, double> values;
 	std::map<std::string, std::vector<double>> lists;
+	std::map<std::string, std::vector<std::string>> strings;
 };
 
 
