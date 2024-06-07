@@ -1774,6 +1774,12 @@ shared_ptr<Ship> Ship::Board(bool autoPlunder, bool nonDocking)
 		bool helped = victim->isDisabled;
 		victim->hull = min(max(victim->hull, victim->MinimumHull() * 1.5), victim->MaxHull());
 		victim->isDisabled = false;
+		// Transfer some energy if needed.
+		if(victim->energy < .05 && energy > 0.)
+		{
+			helped = true;
+			TransferEnergy(100., victim.get());
+		}
 		// Transfer some fuel if needed.
 		if(victim->NeedsFuel() && CanRefuel(*victim))
 		{
@@ -2167,7 +2173,7 @@ bool Ship::IsDisabled() const
 
 	double minimumHull = MinimumHull();
 	bool needsCrew = RequiredCrew() != 0;
-	return (hull < minimumHull || (!crew && needsCrew));
+	return (hull < minimumHull || (!crew && needsCrew) || energy == 0.);
 }
 
 
@@ -2521,6 +2527,20 @@ void Ship::Recharge(int rechargeType, bool hireCrew)
 
 
 
+double Ship::TransferEnergy(double amount, Ship *to)
+{
+	amount = max(energy - attributes.Get("energy capacity"), amount);
+	if(to)
+	{
+		amount = min(to->attributes.Get("energy capacity") - to->energy, amount);
+		to->energy += amount;
+	}
+	energy -= amount;
+	return amount;
+}
+
+
+
 bool Ship::CanRefuel(const Ship &other) const
 {
 	return (fuel - navigation.JumpFuel(targetSystem) >= other.JumpFuelMissing());
@@ -2549,6 +2569,7 @@ int Ship::WasCaptured(const shared_ptr<Ship> &capturer)
 {
 	// Repair up to the point where this ship is just barely not disabled.
 	hull = min(max(hull, MinimumHull() * 1.5), MaxHull());
+	energy = max(energy, 100.);
 	isDisabled = false;
 
 	// Set the new government.
@@ -2659,6 +2680,9 @@ double Ship::Heat() const
 // Get the ship's "health," where <=0 is disabled and 1 means full health.
 double Ship::Health() const
 {
+	if(energy <= 0.)
+		return energy;
+
 	double minimumHull = MinimumHull();
 	double hullDivisor = MaxHull() - minimumHull;
 	double divisor = MaxShields() + hullDivisor;

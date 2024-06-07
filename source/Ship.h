@@ -309,6 +309,8 @@ public:
 	bool IsDestroyed() const;
 	// Recharge and repair this ship (e.g. because it has landed).
 	void Recharge(int rechargeType = Port::RechargeType::All, bool hireCrew = true);
+	// Give the other ship some energy so it can turn to make a jump.
+	double TransferEnergy(double amount, Ship *to);
 	// Check if this ship is able to give the given ship enough fuel to jump.
 	bool CanRefuel(const Ship &other) const;
 	// Give the other ship enough fuel for it to jump.
