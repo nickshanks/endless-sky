@@ -238,11 +238,11 @@ void MapSalesPanel::DrawKey(Information &info) const
 
 	info.SetBar("full", 1.);
 
-	const Interface *ui = GameData::Interfaces().Get("sales key");
-	ui->Draw(info, nullptr);
+	const Interface *keyInterface = GameData::Interfaces().Get("sales key");
+	keyInterface->Draw(info, nullptr);
 
 	const Color bright(.6f, .6f);
-	const Rectangle keyContentBox = ui->GetBox("content");
+	const Rectangle keyContentBox = keyInterface->GetBox("content");
 	const double keyRowHeight = keyContentBox.Height() / KEY_ROW_COUNT;
 	const Point angle = Point(1., 0.);
 	Point pos = keyContentBox.TopLeft() + Point(3., 8.);
