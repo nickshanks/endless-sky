@@ -426,7 +426,12 @@ void AI::UpdateKeys(PlayerInfo &player, Command &activeCommands)
 	}
 	else if(activeCommands.Has(Command::FIGHT) && targetAsteroid)
 		IssueAsteroidTarget(targetAsteroid);
-	if(activeCommands.Has(Command::HOLD))
+	if(activeCommands.Has(Command::HOLD_FIRE))
+	{
+		newOrders.type = Orders::HOLD_FIRE;
+		IssueOrders(newOrders, "holding fire");
+	}
+	if(activeCommands.Has(Command::HOLD_POSITION))
 	{
 		newOrders.type = Orders::HOLD_POSITION;
 		IssueOrders(newOrders, "holding position.");
@@ -3548,10 +3553,15 @@ void AI::AutoFire(const Ship &ship, FireCommand &command, bool secondary, bool i
 	if(ship.IsYours())
 	{
 		auto it = orders.find(&ship);
-		if(it != orders.end() && it->second.target.lock() == currentTarget)
+		if(it != orders.end())
 		{
-			disabledOverride = (it->second.type == Orders::FINISH_OFF);
-			friendlyOverride = disabledOverride | (it->second.type == Orders::ATTACK);
+			if(it->second.target.lock() == currentTarget)
+			{
+				disabledOverride = (it->second.type == Orders::FINISH_OFF);
+				friendlyOverride = disabledOverride || (it->second.type == Orders::ATTACK);
+			}
+			else if(it->second.type == Orders::HOLD_FIRE)
+				return;
 		}
 	}
 	bool currentIsEnemy = currentTarget

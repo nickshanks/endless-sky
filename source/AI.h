@@ -186,6 +186,7 @@ private:
 		// HARVEST is related to MINE and is for picking up flotsam after
 		// ATTACK.
 		static const int HARVEST = 0x003;
+		static const int HOLD_FIRE = 0x010;
 		static const int KEEP_STATION = 0x100;
 		static const int GATHER = 0x101;
 		static const int ATTACK = 0x102;
