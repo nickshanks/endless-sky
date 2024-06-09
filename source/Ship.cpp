@@ -1302,6 +1302,8 @@ vector<string> Ship::FlightCheck() const
 			checks.emplace_back("afterburner only?");
 		if(!thrust && !afterburner)
 			checks.emplace_back("reverse only?");
+		// if(!generation && !solar && !consuming)
+		// if((generation + consuming <= 0.) && !solar)
 		if(energy <= battery)
 			checks.emplace_back("battery only?");
 		if(energy < thrustEnergy)
@@ -1322,6 +1324,7 @@ vector<string> Ship::FlightCheck() const
 		for(const auto &it : outfits)
 			if(it.first->IsWeapon() && it.first->FiringEnergy() > energy)
 			{
+				// Logger::LogError("idle energy per frame (" + Format::Decimal(energy, 1) + ") less than firing energy (" + Format::Decimal(it.first->FiringEnergy(), 1) + ") for " + it.first->DisplayName() + ". " + Format::Decimal((it.first->FiringEnergy() - energy) * 60, 1) + " more generation or storage needed.");
 				checks.emplace_back("insufficient energy to fire?");
 				break;
 			}
