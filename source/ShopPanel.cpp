@@ -868,7 +868,8 @@ void ShopPanel::DrawDetailsSidebar()
 
 	double heightOffset = DrawDetails(point);
 
-	infobarScroll.SetMaxValue(max(0., heightOffset + infobarScroll.AnimatedValue() - Screen::Bottom() + BUTTON_HEIGHT + 10));
+	infobarScroll.SetMaxValue(max(0., heightOffset + infobarScroll.AnimatedValue() - Screen::Bottom() +
+		BUTTON_HEIGHT + 10));
 
 	PointerShader::Draw(Point(Screen::Right() - SIDEBAR_WIDTH - 10, Screen::Top() + 10),
 		Point(0., -1.), 10.f, 10.f, 5.f, Color(!infobarScroll.IsScrollAtMin() ? .8f : .2f, 0.f));
