@@ -1321,13 +1321,25 @@ vector<string> Ship::FlightCheck() const
 			if(fuelCapacity < navigation.JumpFuel())
 				checks.emplace_back("no fuel?");
 		}
+		bool hasWeapons = false;
 		for(const auto &it : outfits)
-			if(it.first->IsWeapon() && it.first->FiringEnergy() > energy)
+			if(it.first->IsWeapon())
 			{
-				// Logger::LogError("idle energy per frame (" + Format::Decimal(energy, 1) + ") less than firing energy (" + Format::Decimal(it.first->FiringEnergy(), 1) + ") for " + it.first->DisplayName() + ". " + Format::Decimal((it.first->FiringEnergy() - energy) * 60, 1) + " more generation or storage needed.");
-				checks.emplace_back("insufficient energy to fire?");
+				hasWeapons = true;
 				break;
 			}
+		if(hasWeapons)
+		{
+			for(const auto &it : outfits)
+				if(it.first->IsWeapon() && it.first->FiringEnergy() > energy)
+				{
+					// Logger::LogError("idle energy per frame (" + Format::Decimal(energy, 1) + ") less than firing energy (" + Format::Decimal(it.first->FiringEnergy(), 1) + ") for " + it.first->DisplayName() + ". " + Format::Decimal((it.first->FiringEnergy() - energy) * 60, 1) + " more generation or storage needed.");
+					checks.emplace_back("insufficient energy to fire?");
+					break;
+				}
+		}
+		else
+			checks.emplace_back("no weapons?");
 		if(CoolingEfficiency() < .5)
 			checks.emplace_back("inefficient cooling?");
 	}

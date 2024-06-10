@@ -1185,6 +1185,9 @@ tip "no hyperdrive?"
 tip "no fuel?"
 	`This ship has insufficient fuel capacity to make a hyperspace jump. If it took off, it would be unable to leave this star system.`
 
+tip "no weapons?"
+	`There are no weapons equipped on this ship. If it came under attack, it would have to flee.`
+
 tip "no bays?"
 	`There are insufficient bays available to carry this ship. If it took off, it would be unable to leave this star system.`
 
