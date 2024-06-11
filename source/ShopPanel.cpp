@@ -754,6 +754,7 @@ void ShopPanel::DrawShipsSidebar()
 
 	static const Color selected(.8f, 1.f);
 	static const Color unselected(.4f, 1.f);
+	static bool hasEscorts = player.Ships().size() > 1;
 	for(const shared_ptr<Ship> &ship : player.Ships())
 	{
 		// Skip any ships that are "absent" for whatever reason.
@@ -808,7 +809,7 @@ void ShopPanel::DrawShipsSidebar()
 				warningType = check;
 		}
 
-		if(playerShips.size() > 1 && ship->OutfitCount(selectedOutfit))
+		if(hasEscorts && ship->OutfitCount(selectedOutfit))
 			PointerShader::Draw(Point(point.X() - static_cast<int>(ICON_TILE / 3), point.Y()),
 				Point(1., 0.), 14.f, 12.f, 0., Color(.9f, .9f, .9f, .2f));
 
