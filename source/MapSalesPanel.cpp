@@ -384,9 +384,9 @@ void MapSalesPanel::Draw(Point &corner, const Sprite *sprite, int swizzle, bool 
 		if(isSelected)
 			FillShader::Fill(corner + .5 * blockSize, blockSize, selectionColor);
 
-		if (swizzle == -1)
+		if(swizzle == -1)
 		{
-		  swizzle = selectedPlanet
+			swizzle = selectedPlanet
 				? selectedPlanet->GetGovernment()->GetSwizzle()
 				: selectedSystem
 					? selectedSystem->GetGovernment()->GetSwizzle()
