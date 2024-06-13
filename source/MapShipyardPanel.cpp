@@ -71,11 +71,9 @@ const Sprite *MapShipyardPanel::CompareSprite() const
 int MapShipyardPanel::SelectedSpriteSwizzle() const
 {
 	int swizzle = selected->CustomSwizzle();
-	if (swizzle == -1 && onlyShowStorageHere)
-	{
+	if(swizzle == -1 && onlyShowStorageHere)
 		swizzle = GameData::PlayerGovernment()->GetSwizzle();
-	}
-	else if (swizzle == -1)
+	else if(swizzle == -1)
 	{
 		swizzle = selectedPlanet
 			? selectedPlanet->GetGovernment()->GetSwizzle()
@@ -265,16 +263,15 @@ void MapShipyardPanel::DrawItems()
 				onlyShowSoldHere || parkedInSystem == 0
 				? ""
 				: parkedInSystem == 1
-				? "1 ship parked"
-				: Format::Number(parkedInSystem) + " ships parked";
+					? "1 ship parked"
+					: Format::Number(parkedInSystem) + " ships parked";
 
 			int swizzle = ship->CustomSwizzle();
-			if (swizzle == -1 && onlyShowStorageHere) {
+			if (swizzle == -1 && onlyShowStorageHere)
 				swizzle = GameData::PlayerGovernment()->GetSwizzle();
-			}
 
 			Draw(corner, sprite, swizzle, isForSale, ship == selected,
-					ship->DisplayModelName(), price, info, parking_details);
+				ship->DisplayModelName(), price, info, parking_details);
 			list.push_back(ship);
 		}
 	}
