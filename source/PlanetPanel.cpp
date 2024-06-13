@@ -43,6 +43,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "TradingPanel.h"
 #include "UI.h"
 
+#include <iostream>
 #include <sstream>
 
 using namespace std;
@@ -356,6 +357,7 @@ void PlanetPanel::CheckWarningsAndTakeOff()
 			for(const auto &warning : result.second)
 				if(jumpWarnings.count(warning))
 				{
+					cerr << "ship " + result.first->Name() + " has " + warning << endl;
 					++nonJumpCount;
 					break;
 				}

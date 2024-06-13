@@ -28,14 +28,16 @@ public:
 	// Checks whether the given ship is a valid target for non-targeted projectiles.
 	static inline bool IsValidTarget(const Ship *ship)
 	{
-		if(!ship->CanBeCarried() || !ship->IsDisabled())
-			return true;
+		if(/* ship->CanBeCarried() && */ship->IsDisabled())
+			return false;
+
 		switch(GameData::GetGamerules().FightersHitWhenDisabled())
 		{
 			case Gamerules::FighterDodgePolicy::ALL: return false;
 			case Gamerules::FighterDodgePolicy::NONE: return true;
 			case Gamerules::FighterDodgePolicy::ONLY_PLAYER: return !ship->IsYours();
 		}
+
 		return false;
 	}
 };
