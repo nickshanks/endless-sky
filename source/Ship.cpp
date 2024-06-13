@@ -5095,3 +5095,14 @@ double Ship::CalculateDeterrence() const
 		}
 	return tempDeterrence;
 }
+
+
+
+bool Ship::Immitates(const Ship &other) const
+{
+	for(auto &it : attributes.Attributes())
+		if(other.Attributes().Get(it.first) != it.second)
+			return false;
+
+	return true;
+}

@@ -461,7 +461,7 @@ bool ShopPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &command, boo
 
 
 
-bool ShopPanel::Click(int x, int y, int /* clicks */)
+bool ShopPanel::Click(int x, int y, int clicks)
 {
 	dragShip = nullptr;
 	// Handle clicks on the buttons.
@@ -551,7 +551,7 @@ bool ShopPanel::Click(int x, int y, int /* clicks */)
 				{
 					dragShip = ship.get();
 					dragPoint.Set(x, y);
-					SideSelect(dragShip);
+					SideSelect(dragShip, clicks);
 					break;
 				}
 
@@ -1237,7 +1237,7 @@ void ShopPanel::SideSelect(int count)
 
 
 
-void ShopPanel::SideSelect(Ship *ship)
+void ShopPanel::SideSelect(Ship *ship, int clicks)
 {
 	bool shift = (SDL_GetModState() & KMOD_SHIFT);
 	bool control = (SDL_GetModState() & (KMOD_CTRL | KMOD_GUI));
@@ -1259,7 +1259,16 @@ void ShopPanel::SideSelect(Ship *ship)
 		}
 	}
 	else if(!control)
+	{
 		playerShips.clear();
+		if(clicks > 1)
+			for(const shared_ptr<Ship> &it : player.Ships())
+			{
+				Ship *itShip = it.get();
+				if(itShip != ship && itShip->Immitates(*ship))
+					playerShips.insert(itShip);
+			}
+	}
 	else if(playerShips.count(ship))
 	{
 		playerShips.erase(ship);
