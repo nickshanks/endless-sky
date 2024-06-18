@@ -1198,14 +1198,15 @@ void Engine::Draw() const
 
 	// Draw escort status.
 	escorts.Draw(hud->GetBox("escorts"));
+}
 
-	if(Preferences::Has("Show CPU / GPU load"))
-	{
-		string loadString = to_string(lround(load * 100.)) + "% CPU";
-		Color color = *colors.Get("medium");
-		font.Draw(loadString,
-			Point(-10 - font.Width(loadString), Screen::Height() * -.5 + 5.), color);
-	}
+void Engine::DrawLoad() const
+{
+	const Font &font = FontSet::Get(14);
+	static const Set<Color> &colors = GameData::Colors();
+	string loadString = to_string(lround(load * 100.)) + "% CPU";
+	Color color = *colors.Get("medium");
+	font.Draw(loadString, Point(-10 - font.Width(loadString), Screen::Height() * -.5 + 5.), color);
 }
 
 

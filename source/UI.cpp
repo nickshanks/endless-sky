@@ -17,6 +17,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "Command.h"
 #include "Panel.h"
+#include "Preferences.h"
 #include "Screen.h"
 
 #include <SDL2/SDL.h>
@@ -122,6 +123,13 @@ void UI::DrawAll()
 
 	for( ; it != stack.end(); ++it)
 		(*it)->Draw();
+
+	// render the frame rate on top of everything
+	if(Preferences::Has("Show CPU / GPU load"))
+	{
+		auto it = stack.begin();
+		(*it)->DrawLoad();
+	}
 }
 
 

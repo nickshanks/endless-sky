@@ -88,6 +88,7 @@ public:
 
 	// Draw a frame.
 	void Draw() const;
+	void DrawLoad() const;
 
 	// Select the object the player clicked on.
 	void Click(const Point &from, const Point &to, bool hasShift, bool hasControl);
