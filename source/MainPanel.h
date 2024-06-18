@@ -38,6 +38,7 @@ public:
 
 	virtual void Step() override;
 	virtual void Draw() override;
+	virtual void DrawLoad() override;
 
 	// The planet panel calls this when it closes.
 	void OnCallback();

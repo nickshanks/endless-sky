@@ -57,6 +57,12 @@ void Panel::Step()
 
 
 
+void Panel::DrawLoad()
+{
+}
+
+
+
 // Return true if this is a full-screen panel, so there is no point in
 // drawing any of the panels under it.
 bool Panel::IsFullScreen() const noexcept

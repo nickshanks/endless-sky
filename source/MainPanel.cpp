@@ -131,6 +131,7 @@ void MainPanel::Step()
 void MainPanel::Draw()
 {
 	FrameTimer loadTimer;
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	engine.Draw();
@@ -149,20 +150,22 @@ void MainPanel::Draw()
 			isDragging = false;
 	}
 
-	if(Preferences::Has("Show CPU / GPU load"))
+	loadSum += loadTimer.Time();
+	if(++loadCount == 60)
 	{
-		string loadString = to_string(lround(load * 100.)) + "% GPU";
-		const Color &color = *GameData::Colors().Get("medium");
-		FontSet::Get(14).Draw(loadString, Point(10., Screen::Height() * -.5 + 5.), color);
-
-		loadSum += loadTimer.Time();
-		if(++loadCount == 60)
-		{
-			load = loadSum;
-			loadSum = 0.;
-			loadCount = 0;
-		}
+		load = loadSum;
+		loadSum = 0.;
+		loadCount = 0;
 	}
+}
+
+void MainPanel::DrawLoad()
+{
+	engine.DrawLoad();
+
+	string loadString = to_string(lround(load * 100.)) + "% GPU";
+	const Color &color = *GameData::Colors().Get("medium");
+	FontSet::Get(14).Draw(loadString, Point(10., Screen::Height() * -.5 + 5.), color);
 }
 
 
