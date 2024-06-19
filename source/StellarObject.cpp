@@ -158,7 +158,7 @@ double StellarObject::Distance() const
 
 double StellarObject::Parallax() const
 {
-	return (isStar && Preferences::GetSystemParallax()) ? .7 : 1.;
+	return (isStar && Preferences::GetSystemParallax()) ? .8 : 1.;
 }
 
 
