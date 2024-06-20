@@ -270,7 +270,7 @@ void MapShipyardPanel::DrawItems()
 			if (swizzle == -1 && onlyShowStorageHere)
 				swizzle = GameData::PlayerGovernment()->GetSwizzle();
 
-			Draw(corner, sprite, swizzle, isForSale, ship == selected,
+			Draw(corner, sprite, swizzle, 0, isForSale, ship == selected,
 				ship->DisplayModelName(), price, info, parking_details);
 			list.push_back(ship);
 		}
