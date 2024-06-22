@@ -786,19 +786,6 @@ void OutfitterPanel::ToggleStorage()
 void OutfitterPanel::ToggleCargo()
 {
 	showCargo = !showCargo;
-
-	if(playerShip)
-	{
-		playerShip = nullptr;
-		playerShips.clear();
-	}
-	else
-	{
-		playerShip = player.Flagship();
-		if(playerShip)
-			playerShips.insert(playerShip);
-	}
-
 	ShopPanel::ToggleCargo();
 }
 
