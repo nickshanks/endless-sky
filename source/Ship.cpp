@@ -1436,8 +1436,16 @@ vector<string> Ship::FlightCheck() const
 			checks.emplace_back("no weapons?");
 		if(CoolingEfficiency() < .5)
 			checks.emplace_back("inefficient cooling?");
-		if(-20. * 60. * derivedAttributes.Get("net energy") > battery)
-			checks.emplace_back("under 20s of battery?");
+		const double maxEnergy = derivedAttributes.Get("max energy");
+		const double netEnergy = derivedAttributes.Get("net energy");
+		const double energyDuration = maxEnergy / (60. * max(0., -netEnergy));
+		if(20. * 60. * -netEnergy > battery) // energyDuration < 20.
+			checks.emplace_back("under 20s of energy?");
+		const double maxHeat = derivedAttributes.Get("max heat");
+		const double netHeat = derivedAttributes.Get("net heat");
+		const double heatDuration = maxHeat / max(0., netHeat - maxHeat);
+		if(heatDuration < 20.)
+			checks.emplace_back("under 20s of heat?");
 	}
 
 	return checks;

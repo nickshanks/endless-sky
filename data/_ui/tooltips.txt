@@ -1207,8 +1207,11 @@ tip "inefficient cooling?"
 tip "insufficient energy to fire?"
 	`This ship has insufficient energy storage to fire an installed weapon.`
 
-tip "under 20s of battery?"
+tip "under 20s of energy?"
 	`This ship has less than 20 seconds of combat battery power.`
+
+tip "under 20s of heat?"
+	`This ship will overheat within 20 seconds of combat at maximum heat generation.`
 
 
 
