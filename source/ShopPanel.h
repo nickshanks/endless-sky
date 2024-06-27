@@ -162,6 +162,7 @@ protected:
 	const Ship *selectedShip = nullptr;
 	// The currently selected Outfit, for the OutfitterPanel.
 	const Outfit *selectedOutfit = nullptr;
+	bool isMissingOutfit = false;
 	// (It may be worth moving the above pointers into the derived classes in the future.)
 
 	ScrollVar<double> mainScroll;

@@ -529,7 +529,10 @@ bool ShopPanel::Click(int x, int y, int clicks)
 			if(zone.GetShip())
 				selectedShip = zone.GetShip();
 			else
+			{
 				selectedOutfit = zone.GetOutfit();
+				isMissingOutfit = SDL_GetModState() & KMOD_CTRL;
+			}
 
 			previousX = zone.Center().X();
 
@@ -711,6 +714,8 @@ void ShopPanel::DrawShipsSidebar()
 	const Color &dark = *GameData::Colors().Get("dark");
 	const Color &medium = *GameData::Colors().Get("medium");
 	const Color &bright = *GameData::Colors().Get("bright");
+	static const Color missingOutfit(.6f, 0.f, 0.f, 1.f);
+	static const Color missingOutfitSelected(1.f, .2f, .2f, 1.f);
 
 	sidebarScroll.Step();
 
@@ -778,11 +783,25 @@ void ShopPanel::DrawShipsSidebar()
 			if(Preferences::Has(SHIP_OUTLINES))
 			{
 				Point size(sprite->Width() * scale, sprite->Height() * scale);
-				OutlineShader::Draw(sprite, point, size, isSelected ? selected : unselected);
+				OutlineShader::Draw(sprite, point, size,
+					isMissingOutfit && (*ship).Outfits().count(selectedOutfit) == 0
+						? isSelected
+							? missingOutfitSelected
+							: missingOutfit
+						: isSelected
+							? selected
+							: unselected);
 			}
 			else
 			{
 				int swizzle = ship->CustomSwizzle() >= 0 ? ship->CustomSwizzle() : player.GetPlanet()->GetGovernment()->GetSwizzle();
+				if(isMissingOutfit)
+				{
+					const Color *panelBackground = GameData::Colors().Get("panel background");
+					const Point size(sprite->Width() * scale, sprite->Height() * scale);
+					FillShader::Fill(point, size, missingOutfit);
+					FillShader::Fill(point, size * .8, *panelBackground);
+				}
 				SpriteShader::Draw(sprite, point, scale, swizzle);
 			}
 		}
@@ -805,7 +824,7 @@ void ShopPanel::DrawShipsSidebar()
 				warningType = check;
 		}
 
-		if(hasEscorts && ship->OutfitCount(selectedOutfit))
+		if(hasEscorts && !isMissingOutfit && ship->OutfitCount(selectedOutfit))
 			PointerShader::Draw(Point(point.X() - static_cast<int>(ICON_TILE / 3), point.Y()),
 				Point(1., 0.), 14.f, 12.f, 0., isSelected ? Color(.9f, .9f, .9f, .2f) : Color(.7f, .7f, .7f, .2f));
 
