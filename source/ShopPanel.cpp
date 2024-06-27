@@ -816,6 +816,13 @@ void ShopPanel::DrawShipsSidebar()
 			FillShader::Fill(point + CORNER, Point(4., 4.), isSelected ? bright : medium);
 		}
 
+		if(ship->IsParked())
+		{
+			static const Point CORNER = .35 * Point(ICON_TILE, ICON_TILE);
+			FillShader::Fill(point + CORNER, Point(6., 6.), dark);
+			FillShader::Fill(point + CORNER, Point(4., 4.), isSelected ? bright : medium);
+		}
+
 		point.X() += ICON_TILE;
 	}
 	point.Y() += ICON_TILE;

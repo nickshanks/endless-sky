@@ -2403,7 +2403,7 @@ void Engine::DoCollection(Flotsam &flotsam)
 			return;
 		if(collector == player.Flagship() && flotsamSetting == Preferences::FlotsamCollection::ESCORT)
 			return;
-		if(flotsamSetting == Preferences::FlotsamCollection::FLAGSHIP)
+		if(collector != player.Flagship() && flotsamSetting == Preferences::FlotsamCollection::FLAGSHIP)
 			return;
 	}
 
@@ -2411,6 +2411,9 @@ void Engine::DoCollection(Flotsam &flotsam)
 	int amount = flotsam.TransferTo(collector);
 	// If the collector is not one of the player's ships, we can bail out now.
 	if(!collector->IsYours())
+		return;
+
+	if(collector->GetParent() && !Preferences::Has("Extra fleet status messages"))
 		return;
 
 	// One of your ships picked up this flotsam. Describe who it was.
