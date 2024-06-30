@@ -877,7 +877,8 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 				int crew = ship.RequiredCrew();
 				double cargo = ship.Attributes().Get("cargo space");
 				double ratio = cargo / crew;
-				row.emplace_back(crew ? ratio == lround(ratio) ? Format::Number(ratio) : Format::Decimal(ratio, 2) : cargo ? "infinite" : "n/a");
+				row.emplace_back(crew ? ratio == lround(ratio) ? Format::Number(ratio) : Format::Decimal(ratio, 2)
+					: cargo ? "infinite" : "n/a");
 			}
 			else
 				row.emplace_back("-");
