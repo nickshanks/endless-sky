@@ -70,11 +70,13 @@ void ColumnChooserPanel::Draw()
 	// );
 
 	Point topLeft(270., -280.);
-	const Point boxSize = Point(box[0]->Width(), box[0]->Height());
 	static const Point ROW_ADVANCE(0., 20.);
+	static const Point TEXT_OFFSET(box[0]->Width(), 2.);
+	static const Point BOX_SIZE(box[0]->Width(), box[0]->Height());
+	static const int PANEL_CONTENT_WIDTH = 727;
 	const set<const string> visibleColumns = panelState->VisibleColumns();
 	auto isVisible = [&](string name){ return visibleColumns.find(name) != visibleColumns.end(); };
-	const float availableWidth = 727 - accumulate(columns.begin(), columns.end(), 0,
+	const int availableWidth = PANEL_CONTENT_WIDTH - accumulate(columns.begin(), columns.end(), 0,
 		[&](int acc, PlayerInfoPanel::SortableColumn column) {
 			return acc + (isVisible(column.name) ? column.layout.width : 0);
 		});
@@ -86,10 +88,10 @@ void ColumnChooserPanel::Draw()
 		bool enabled = visible || column.layout.width <= availableWidth;
 		bool hover = zoneBounds.Contains(hoverPoint);
 
-		Rectangle spriteBounds = Rectangle::FromCorner(topLeft, boxSize);
+		Rectangle spriteBounds = Rectangle::FromCorner(topLeft, BOX_SIZE);
 		SpriteShader::Draw(box[visible], spriteBounds.Center());
 
-		Point textPos = topLeft + Point(box[0]->Width(), 2.);
+		Point textPos = topLeft + TEXT_OFFSET;
 		font.Draw(column.checkboxLabel, textPos, enabled ? hover ? *bright : *medium : *dim);
 
 		if(enabled)
