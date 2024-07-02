@@ -95,7 +95,7 @@ void ColumnChooserPanel::Draw()
 		if(enabled)
 			zones.emplace_back(ClickZone(zoneBounds, column.name));
 
-		topLeft = topLeft + ROW_ADVANCE;
+		topLeft += ROW_ADVANCE;
 	}
 }
 
