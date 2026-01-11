@@ -1245,6 +1245,7 @@ void OutfitterPanel::DrawButtons()
 		info.SetCondition("can park");
 	else if(CanUnpark())
 		info.SetCondition("can unpark");
+	ClearZones();
 	ui->Draw(info, this);
 
 	const Point buttonPanelSize(SIDEBAR_WIDTH, ButtonPanelHeight());
@@ -1252,6 +1253,12 @@ void OutfitterPanel::DrawButtons()
 	const Point creditsPoint(
 		Screen::Right() - SIDEBAR_WIDTH + 10,
 		Screen::Bottom() - ButtonPanelHeight() + 10);
+
+	// Clear the buttonZones, they will be populated again as buttons are drawn.
+
+
+	// Add this button to the buttonZones:
+	// buttonZones.emplace_back(buttonShape, keyCode);
 
 	// Draw tooltips for the button being hovered over:
 	string tooltip = GameData::Tooltip(string("outfitter: ") + hoverButton);

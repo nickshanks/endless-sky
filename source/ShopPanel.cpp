@@ -87,11 +87,7 @@ ShopPanel::ShopPanel(PlayerInfo &player, bool isOutfitter)
 	creditsTooltip(250, Alignment::LEFT, Tooltip::Direction::UP_LEFT, Tooltip::Corner::TOP_RIGHT,
 		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium")),
 	buttonsTooltip(250, Alignment::LEFT, Tooltip::Direction::DOWN_LEFT, Tooltip::Corner::TOP_LEFT,
-		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium")),
-	hover(*GameData::Colors().Get("hover")),
-	active(*GameData::Colors().Get("active")),
-	inactive(*GameData::Colors().Get("inactive")),
-	back(*GameData::Colors().Get("panel background"))
+		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium"))
 {
 	if(playerShip)
 		playerShips.insert(playerShip);
@@ -1372,21 +1368,6 @@ void ShopPanel::MainDown()
 
 	selectedShip = it->GetShip();
 	selectedOutfit = it->GetOutfit();
-}
-
-
-
-void ShopPanel::DrawButton(const string &name, const Rectangle &buttonShape, bool isActive,
-	bool hovering, char keyCode)
-{
-	const Font &bigFont = FontSet::Get(18);
-	const Color *color = !isActive ? &inactive : hovering ? &hover : &active;
-
-	FillShader::Fill(buttonShape, back);
-	bigFont.Draw(name, buttonShape.Center() - .5 * Point(bigFont.Width(name), bigFont.Height()), *color);
-
-	// Add this button to the buttonZones:
-	buttonZones.emplace_back(buttonShape, keyCode);
 }
 
 

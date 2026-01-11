@@ -203,6 +203,13 @@ void ShipyardPanel::DrawButtons()
 		info.SetCondition("can unpark");
 	ui->Draw(info, this);
 
+	// Clear the buttonZones, they will be populated again as buttons are drawn.
+	ClearZones();
+
+
+	// Add this button to the buttonZones:
+	// buttonZones.emplace_back(buttonShape, keyCode);
+
 	// Draw tooltips for the button being hovered over:
 	double sidebarWidth = ui->GetValue("fleet bar width");
 	double buttonBoxHeight = ui->GetValue("button box height");

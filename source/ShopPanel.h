@@ -107,7 +107,6 @@ protected:
 
 	int64_t LicenseCost(const Outfit *outfit, bool onlyOwned = false) const;
 
-	void DrawButton(const std::string &name, const Rectangle &buttonShape, bool isActive, bool hovering, char keyCode);
 	void CheckSelection();
 
 	bool CanPark();
@@ -224,14 +223,5 @@ private:
 private:
 	std::string shipName;
 	std::string warningType;
-
-protected:
-	// Define the colors used by DrawButton, implemented at the class level to avoid repeat lookups from GameData.
-	const Color &hover;
-	const Color &active;
-	const Color &inactive;
-	const Color &back;
-
-private:
 	bool checkedHelp = false;
 };
