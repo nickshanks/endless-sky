@@ -229,11 +229,12 @@ void BoardingPanel::Draw()
 		scrollBar.SyncDraw(scroll,
 			plunderList.TopRight() + Point{0., 10.}, plunderList.BottomRight() - Point{0., 10.});
 
-	// Draw the status messages from hand to hand combat.
+	// Draw the last 5 status messages from hand to hand combat.
 	Point messagePos(50., 55.);
-	for(const string &message : messages)
+	int size = static_cast<int>(messages.size());
+	for(int i = max(0, size - 5); i < size; i++)
 	{
-		font.Draw(message, messagePos, bright);
+		font.Draw(messages[i], messagePos, bright);
 		messagePos.Y() += 20.;
 	}
 }
@@ -479,10 +480,6 @@ bool BoardingPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &command,
 	}
 	else if(command.Has(Command::INFO))
 		GetUI().Push(new ShipInfoPanel(player));
-
-	// Trim the list of status messages.
-	while(messages.size() > 5)
-		messages.erase(messages.begin());
 
 	return true;
 }
