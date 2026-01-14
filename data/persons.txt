@@ -1013,7 +1013,7 @@ person "Prototype B3-CC4"
 			"<"
 		word
 			"Unregistered"
-			"Undecipherable"
+			"Indecipherable"
 		word
 			" "
 		word

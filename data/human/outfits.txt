@@ -279,6 +279,11 @@ outfit "Asteroid Scanner"
 	"asteroid scan power" 40
 	description "This highly specialized scanning system can analyze the mineral composition of nearby asteroids and identify the ones that contain valuable materials."
 
+outfit "Asteroid Scanner" "Asteroid Scanner (Old)"
+	government "Pirate"
+	thumbnail "outfit/asteroid scanner (old)"
+	description "This antique scanning system can still analyze the mineral composition of nearby asteroids and identify the ones that contain valuable materials."
+
 outfit "Tactical Scanner"
 	category "Systems"
 	series "Scanners"

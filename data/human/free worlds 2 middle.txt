@@ -1868,7 +1868,9 @@ mission "FW Albatross 2A"
 		system "Orvala"
 		government "Pirate"
 		ship "Bulwark (Heavy)" "Dread"
-		dialog "You have destroyed Ryk Bartlett's ship. Hopefully now the elders on Albatross will be more inclined to bargain with the Free Worlds."
+		dialog "You have destroyed Ryk Bartlett's ship, killing him. Hopefully now the elders on Albatross will be more inclined to bargain with the Free Worlds."
+		on capture
+			dialog "You have captured Ryk Bartlett's ship, killing him in the process. Hopefully now the elders on Albatross will be more inclined to bargain with the Free Worlds."
 	
 	npc
 		personality staying plunders disables marked

@@ -477,6 +477,13 @@ mission "Ask Quarg About Coalition Late"
 				`	"I was born on Earth."`
 					to display
 						has "start: syndicate"
+				`	"I come from <home planet>, in the <home system> system."`
+					to display
+						not "start: default"
+						not "start: deep"
+						not "start: paradise"
+						not "start: hai"
+						not "start: syndicate"
 					goto homeworld
 				`	"My ship is my home."`
 					goto ship
