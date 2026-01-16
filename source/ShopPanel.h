@@ -107,9 +107,10 @@ protected:
 
 	int64_t LicenseCost(const Outfit *outfit, bool onlyOwned = false) const;
 
-	void DrawButton(const std::string &name, const Rectangle &buttonShape, bool isActive, bool hovering, char keyCode);
 	void CheckSelection();
 
+	bool CanPark();
+	bool CanUnpark();
 
 protected:
 	class Zone : public ClickZone<const Ship *> {
@@ -139,12 +140,6 @@ protected:
 	static constexpr int SIDE_WIDTH = SIDEBAR_WIDTH + INFOBAR_WIDTH;
 	static constexpr int SHIP_SIZE = 250;
 	static constexpr int OUTFIT_SIZE = 183;
-	// Button size/placement info:
-	static constexpr double BUTTON_ROW_START_PAD = 10;
-	static constexpr double BUTTON_ROW_PAD = 9.;
-	static constexpr double BUTTON_COL_PAD = 9.;
-	static constexpr double BUTTON_HEIGHT = 30.;
-	static constexpr double BUTTON_WIDTH = 73.;
 
 protected:
 	PlayerInfo &player;
@@ -222,17 +217,11 @@ private:
 	// Check if the given point is within the button zone, and if so return the
 	// letter of the button (or ' ' if it's not on a button).
 	char CheckButton(int x, int y);
+	bool EscortSelected();
 
 
 private:
 	std::string shipName;
 	std::string warningType;
-
-	// Define the colors used by DrawButton, implemented at the class level to avoid repeat lookups from GameData.
-	const Color &hover;
-	const Color &active;
-	const Color &inactive;
-	const Color &back;
-
 	bool checkedHelp = false;
 };

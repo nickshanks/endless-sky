@@ -87,11 +87,7 @@ ShopPanel::ShopPanel(PlayerInfo &player, bool isOutfitter)
 	creditsTooltip(250, Alignment::LEFT, Tooltip::Direction::UP_LEFT, Tooltip::Corner::TOP_RIGHT,
 		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium")),
 	buttonsTooltip(250, Alignment::LEFT, Tooltip::Direction::DOWN_LEFT, Tooltip::Corner::TOP_LEFT,
-		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium")),
-	hover(*GameData::Colors().Get("hover")),
-	active(*GameData::Colors().Get("active")),
-	inactive(*GameData::Colors().Get("inactive")),
-	back(*GameData::Colors().Get("panel background"))
+		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium"))
 {
 	if(playerShip)
 		playerShips.insert(playerShip);
@@ -710,6 +706,56 @@ const Outfit *ShopPanel::Zone::GetOutfit() const
 
 
 
+bool ShopPanel::EscortSelected()
+{
+	if(playerShips.empty())
+		return false;
+
+	if(playerShips.size() == 1)
+	{
+		const Ship *flagship = player.Flagship();
+		auto it = playerShips.begin();
+		if(*it == flagship)
+			return false;
+	}
+
+	return true;
+}
+
+
+
+bool ShopPanel::CanPark()
+{
+	if(!EscortSelected())
+		return false;
+
+	return !CanUnpark();
+}
+
+
+
+bool ShopPanel::CanUnpark()
+{
+	if(!EscortSelected())
+		return false;
+
+	bool allParked = true;
+	const Ship *flagship = player.Flagship();
+	for(Ship *ship : playerShips)
+	{
+		if(ship == flagship)
+			return false;
+		if(ship->IsDisabled())
+			continue;
+
+		allParked &= ship->IsParked();
+	}
+
+	return allParked;
+}
+
+
+
 void ShopPanel::DrawShipsSidebar()
 {
 	const Font &font = FontSet::Get(14);
@@ -840,7 +886,7 @@ void ShopPanel::DrawShipsSidebar()
 	if(sidebarScroll.Scrollable())
 	{
 		Point top(Screen::Right() - 3, Screen::Top() + 10);
-		Point bottom(Screen::Right() - 3, Screen::Bottom() - 80);
+		Point bottom(Screen::Right() - 3, Screen::Bottom() - ButtonPanelHeight() - 10);
 
 		sidebarScrollbar.SyncDraw(sidebarScroll, top, bottom);
 	}
@@ -1322,21 +1368,6 @@ void ShopPanel::MainDown()
 
 	selectedShip = it->GetShip();
 	selectedOutfit = it->GetOutfit();
-}
-
-
-
-void ShopPanel::DrawButton(const string &name, const Rectangle &buttonShape, bool isActive,
-	bool hovering, char keyCode)
-{
-	const Font &bigFont = FontSet::Get(18);
-	const Color *color = !isActive ? &inactive : hovering ? &hover : &active;
-
-	FillShader::Fill(buttonShape, back);
-	bigFont.Draw(name, buttonShape.Center() - .5 * Point(bigFont.Width(name), bigFont.Height()), *color);
-
-	// Add this button to the buttonZones:
-	buttonZones.emplace_back(buttonShape, keyCode);
 }
 
 

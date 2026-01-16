@@ -2132,6 +2132,223 @@ interface "bank (small screen)"
 
 
 
+interface "shipyard buttons"
+	anchor bottom right
+	value "fleet bar width" 255
+	value "button box height" 119
+
+	fill
+		from -255 -119 to 0 0
+		color "shop side panel background"
+
+	fill
+		from -254.5 -119 to 0 -118
+		color "shop side panel footer"
+
+	label "You have:"
+		align left
+		from -246 -100
+		color "medium"
+	string "credits"
+		from -10 -100
+		align right
+
+	fill
+		center -50 -25
+		dimensions 80 30
+		color "panel background"
+	button l "_Leave"
+		center -50 -25
+		dimensions 80 30
+		size 18
+
+	fill
+		center -211 -67
+		dimensions 70 30
+		color "panel background"
+	active if "can buy"
+	button b "_Buy"
+		center -211 -67
+		dimensions 70 30
+		size 18
+	string "multiplier"
+		center -211 -46
+		color medium
+
+	fill
+		center -133 -67
+		dimensions 70 30
+		color "panel background"
+	active if "can sell"
+	button s "_Sell"
+		center -133 -67
+		dimensions 70 30
+		size 18
+
+	fill
+		center -50 -67
+		dimensions 80 30
+		color "panel background"
+	active if "can sell"
+	button r "Sell H_ull"
+		center -50 -67
+		dimensions 80 30
+		size 18
+
+	fill
+		center -211 -25
+		dimensions 70 30
+		color "panel background"
+	visible if "!can unpark"
+	active if "can park"
+	button k "Par_k"
+		center -211 -25
+		dimensions 70 30
+		size 18
+	visible if "can unpark"
+	active if "can unpark"
+	button k "Unpar_k"
+		center -211 -25
+		dimensions 70 30
+		size 18
+
+
+
+interface "outfitter buttons"
+	anchor bottom right
+	value "fleet bar width" 255
+	value "button box height" 184
+
+	fill
+		from -255 -184 to 0 0
+		color "shop side panel background"
+
+	fill
+		from -254.5 -184 to 0 -183
+		color "shop side panel footer"
+
+	label "You have:"
+		align left
+		from -246 -165
+		color "medium"
+	string "credits"
+		from -10 -165
+		align right
+
+	label "Cargo space:"
+		align left
+		from -246 -145
+		color "medium"
+	string "cargo"
+		from -10 -145
+		align right
+
+	fill
+		center -50 -25
+		dimensions 80 30
+		color "panel background"
+	button l "_Leave"
+		center -50 -25
+		dimensions 80 30
+		size 18
+
+	fill
+		center -211 -109
+		dimensions 70 30
+		color "panel background"
+	active if "can buy"
+	button b "_Buy"
+		center -211 -109
+		dimensions 70 30
+		size 18
+	string "multiplier"
+		center -211 -88
+		color medium
+
+	fill
+		center -211 -67
+		dimensions 70 30
+		color "panel background"
+	active if "can sell"
+	button s "_Sell"
+		center -211 -67
+		dimensions 70 30
+		size 18
+	string "multiplier"
+		center -211 -46
+		color medium
+
+	fill
+		center -133 -109
+		dimensions 70 30
+		color "panel background"
+	active if "can load into cargo"
+	button c "_Cargo"
+		center -133 -109
+		dimensions 70 30
+		size 18
+	string "multiplier"
+		center -133 -88
+		color medium
+
+	fill
+		center -133 -67
+		dimensions 70 30
+		color "panel background"
+	active if "can store at outfitter"
+	button r "Sto_rage"
+		center -133 -67
+		dimensions 70 30
+		size 18
+	string "multiplier"
+		center -133 -46
+		color medium
+
+	fill
+		center -50 -109
+		dimensions 80 30
+		color "panel background"
+	active if "can install"
+	button i "_Install"
+		center -50 -109
+		dimensions 80 30
+		size 18
+	string "multiplier"
+		center -50 -88
+		color medium
+
+	fill
+		center -50 -67
+		dimensions 80 30
+		color "panel background"
+	active if "can uninstall"
+	button u "_Uninstall"
+		center -50 -67
+		dimensions 80 30
+		size 18
+	string "multiplier"
+		center -50 -46
+		color medium
+
+	fill
+		center -211 -25
+		dimensions 70 30
+		color "panel background"
+	visible if "!can unpark"
+	active if "can park"
+	button k "Par_k"
+		center -211 -25
+		dimensions 70 30
+		size 18
+	visible if "can unpark"
+	active if "can unpark"
+	button k "Unpar_k"
+		center -211 -25
+		dimensions 70 30
+		size 18
+
+
+
 interface "mission" bottom
 	box "description"
 		from -190 -214 to 190 -118
