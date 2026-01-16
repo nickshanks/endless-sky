@@ -434,7 +434,7 @@ mission "Efreti: Distress Call 4"
 
 mission "Efreti: Distress Call 5"
 	name "<EDC-ship> salvage team"
-	description "Hire a <bunks> member salvage team on <destination> to salvage the Efreti ship <EDC-ship>."
+	description "Hire a <bunks>-member salvage team on <destination> to salvage the Efreti ship <EDC-ship>."
 	source "Karek Fornati"
 	destination "Greenwater"
 	landing
