@@ -305,6 +305,17 @@ void PlayerInfo::Load(const filesystem::path &path)
 			firstName = child.Token(1);
 			lastName = child.Token(2);
 		}
+		else if(key == "pilot" && child.Size() == 1)
+			for(const DataNode &grand : child)
+			{
+				const DataNode &child = grand;
+				const string &key = child.Token(0);
+				if(key == "name")
+				{
+					firstName = child.Token(1);
+					lastName = child.Token(2);
+				}
+			}
 		else if(key == "date" && child.Size() >= 4)
 			date = Date(child.Value(1), child.Value(2), child.Value(3));
 		else if(key == "marked event changes today")
@@ -4567,7 +4578,12 @@ void PlayerInfo::Save(DataWriter &out) const
 	// Basic player information and persistent UI settings:
 
 	// Pilot information:
-	out.Write("pilot", firstName, lastName);
+	out.Write("pilot");
+	out.BeginChild();
+	{
+		out.Write("name", firstName, lastName);
+	}
+	out.EndChild();
 	out.Write("date", date.Day(), date.Month(), date.Year());
 	if(markedChangesToday)
 		out.Write("marked event changes today");

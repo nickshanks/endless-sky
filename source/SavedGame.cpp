@@ -51,6 +51,12 @@ void SavedGame::Load(const filesystem::path &path)
 		bool hasValue = node.Size() >= 2;
 		if(key == "pilot" && node.Size() >= 3)
 			name = node.Token(1) + " " + node.Token(2);
+		else if(key == "pilot" && node.Size() == 1)
+		{
+			for(const DataNode &child : node)
+				if(child.Token(0) == "name" && child.Size() >= 2)
+					name = child.Token(1) + " " + child.Token(2);
+		}
 		else if(key == "date" && node.Size() >= 4)
 			date = Date(node.Value(1), node.Value(2), node.Value(3)).ToString();
 		else if(key == "system" && hasValue)
