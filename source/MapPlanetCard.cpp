@@ -47,32 +47,34 @@ MapPlanetCard::MapPlanetCard(const StellarObject &object, unsigned number, bool 
 	: parent(parent), number(number), hasVisited(hasVisited), planetName(object.DisplayName())
 {
 	planet = object.GetPlanet();
-	hasSpaceport = planet->HasServices();
-	hasShipyard = planet->HasShipyard();
-	hasOutfitter = planet->HasOutfitter();
-	governmentName = planet->GetGovernment()->DisplayName();
-	string systemGovernmentName = planet->GetSystem()->GetGovernment()->DisplayName();
-	if(governmentName != "Uninhabited" && governmentName != systemGovernmentName)
-		hasGovernments = true;
+	if(planet) {
+		hasSpaceport = planet->HasServices();
+		hasShipyard = planet->HasShipyard();
+		hasOutfitter = planet->HasOutfitter();
+		governmentName = planet->GetGovernment()->DisplayName();
+		string systemGovernmentName = planet->GetSystem()->GetGovernment()->DisplayName();
+		if(governmentName != "Uninhabited" && governmentName != systemGovernmentName)
+			hasGovernments = true;
 
-	if(!hasSpaceport)
-		reputationLabel = "No Spaceport";
-	else
-	{
-		switch(planet->GetFriendliness())
+		if(!hasSpaceport)
+			reputationLabel = "No Spaceport";
+		else
 		{
-			case Planet::Friendliness::FRIENDLY:
-				reputationLabel = "Friendly";
-				break;
-			case Planet::Friendliness::RESTRICTED:
-				reputationLabel = "Restricted";
-				break;
-			case Planet::Friendliness::HOSTILE:
-				reputationLabel = "Hostile";
-				break;
-			case Planet::Friendliness::DOMINATED:
-				reputationLabel = "Dominated";
-				break;
+			switch(planet->GetFriendliness())
+			{
+				case Planet::Friendliness::FRIENDLY:
+					reputationLabel = "Friendly";
+					break;
+				case Planet::Friendliness::RESTRICTED:
+					reputationLabel = "Restricted";
+					break;
+				case Planet::Friendliness::HOSTILE:
+					reputationLabel = "Hostile";
+					break;
+				case Planet::Friendliness::DOMINATED:
+					reputationLabel = "Dominated";
+					break;
+			}
 		}
 	}
 
@@ -197,27 +199,30 @@ bool MapPlanetCard::DrawIfFits(const Point &uiPoint)
 			font.Draw({ planetName, alignLeft }, uiPoint + Point(0, textStart), isSelected ? medium : dim);
 
 		// Draw the government name, reputation, shipyard, outfitter and visited.
-		const double margin = mapInterface->GetValue("text margin");
-		if(hasGovernments && FitsCategory(categories))
-			font.Draw(governmentName, uiPoint + Point(margin, textStart + categorySize),
-				governmentName == "Uninhabited" ? faint : dim);
-		if(FitsCategory(4.))
-			font.Draw(reputationLabel, uiPoint + Point(margin, textStart + categorySize * (1. + hasGovernments)),
-				hasSpaceport ? medium : faint);
-		if(FitsCategory(3.))
-			font.Draw("Shipyard", uiPoint + Point(margin, textStart + categorySize * (2. + hasGovernments)),
-				hasShipyard ? medium : faint);
-		if(FitsCategory(2.))
-			font.Draw("Outfitter", uiPoint + Point(margin, textStart + categorySize * (3. + hasGovernments)),
-				hasOutfitter ? medium : faint);
-		if(FitsCategory(1.))
-			font.Draw(hasVisited ? "(has been visited)" : "(not yet visited)",
-				uiPoint + Point(margin, textStart + categorySize * (4. + hasGovernments)), dim);
+		if(planet)
+		{
+			const double margin = mapInterface->GetValue("text margin");
+			if(hasGovernments && FitsCategory(categories))
+				font.Draw(governmentName, uiPoint + Point(margin, textStart + categorySize),
+					governmentName == "Uninhabited" ? faint : dim);
+			if(FitsCategory(4.))
+				font.Draw(reputationLabel, uiPoint + Point(margin, textStart + categorySize * (1. + hasGovernments)),
+					hasSpaceport ? medium : faint);
+			if(FitsCategory(3.))
+				font.Draw("Shipyard", uiPoint + Point(margin, textStart + categorySize * (2. + hasGovernments)),
+					hasShipyard ? medium : faint);
+			if(FitsCategory(2.))
+				font.Draw("Outfitter", uiPoint + Point(margin, textStart + categorySize * (3. + hasGovernments)),
+					hasOutfitter ? medium : faint);
+			if(FitsCategory(1.))
+				font.Draw(hasVisited ? "(has been visited)" : "(not yet visited)",
+					uiPoint + Point(margin, textStart + categorySize * (4. + hasGovernments)), dim);
 
-		// Draw the arrow pointing to the selected category.
-		if(FitsCategory(categories - (selectedCategory + 1.)))
-			PointerShader::Draw(uiPoint + Point(margin, textStart + 8. + (selectedCategory + 1) * categorySize),
-				Point(1., 0.), 10.f, 10.f, 0.f, medium);
+			// Draw the arrow pointing to the selected category.
+			if(FitsCategory(categories - (selectedCategory + 1.)))
+				PointerShader::Draw(uiPoint + Point(margin, textStart + 8. + (selectedCategory + 1) * categorySize),
+					Point(1., 0.), 10.f, 10.f, 0.f, medium);
+		}
 
 		if(isSelected)
 			Highlight(availableBottomSpace);

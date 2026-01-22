@@ -512,6 +512,20 @@ void System::Load(const DataNode &node, Set<Planet> &planets, const ConditionsSt
 
 	if(displayName.empty())
 		displayName = trueName;
+
+	int totalStars = 0, starIndex = 0;
+	for(StellarObject &object : objects)
+		if(object.isStar && object.HasSprite() && GameData::StarIcon(object.GetSprite()))
+			totalStars++;
+	for(StellarObject &object : objects)
+		if(object.isStar && object.HasSprite() && GameData::StarIcon(object.GetSprite()))
+		{
+			// These suffixes just loop round again. Please don't put more than 26 stars in a system.
+			if(object.displayName.empty())
+				object.displayName = displayName + (totalStars > 1 ? " " + string(1, 'A' + starIndex % 26) : "");
+			starIndex++;
+		}
+
 }
 
 
@@ -1118,6 +1132,8 @@ void System::LoadObjectHelper(const DataNode &node, StellarObject &object, bool 
 			object.isMoon = (!object.isStation && object.parent >= 0 && !objects[object.parent].IsStar());
 		}
 	}
+	else if(key == "display name" && hasValue)
+		object.displayName = node.Token(1);
 	else if(key == "distance" && hasValue)
 		object.distance = node.Value(1);
 	else if(key == "period" && hasValue)

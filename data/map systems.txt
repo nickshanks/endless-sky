@@ -4930,11 +4930,13 @@ system "Alpha Centauri"
 	fleet "Small Republic" 2000
 	fleet "Large Republic" 6000
 	object
+		"display name" "Rigil Kentaurus"
 		sprite star/g3
 		distance 38.238
 		period 10.3766
 		offset 180
 	object
+		"display name" Toliman
 		sprite star/k0
 		distance 54.6257
 		period 10.3766

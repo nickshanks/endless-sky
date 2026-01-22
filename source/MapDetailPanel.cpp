@@ -540,8 +540,22 @@ void MapDetailPanel::GeneratePlanetCards(const System &system)
 	scroll.Set(0);
 	unsigned number = 0;
 	MapPlanetCard::ResetSize();
+
+	// Display stars in shared card.
 	for(const StellarObject &object : system.Objects())
-		if(object.HasSprite() && object.HasValidPlanet())
+	{
+		if(!object.HasSprite())
+			continue;
+
+		if(commodity == SHOW_STARS)
+		{
+			if(!GameData::StarIcon(object.GetSprite()))
+				continue;
+
+			planetCards.emplace_back(object, number, false, this);
+			++number;
+		}
+		else if(object.HasValidPlanet())
 		{
 			// The same "planet" may appear multiple times in one system,
 			// providing multiple landing and departure points (e.g. ringworlds).
@@ -553,6 +567,7 @@ void MapDetailPanel::GeneratePlanetCards(const System &system)
 			shown.insert(planet);
 			++number;
 		}
+	}
 	shownSystem = &system;
 }
 

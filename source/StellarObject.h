@@ -88,6 +88,9 @@ private:
 	std::vector<RandomEvent<Hazard>> hazards;
 	int parent;
 
+	// Only for stars.
+	std::string displayName;
+
 	const std::string *message;
 	bool isStar;
 	bool isStation;
