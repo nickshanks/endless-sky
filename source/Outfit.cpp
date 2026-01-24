@@ -279,8 +279,8 @@ void Outfit::Load(const DataNode &node, const ConditionsStore *playerConditions)
 			thumbnail = SpriteSet::Get(child.Token(1));
 		else if(key == "thumbnail sprite" && hasValue)
 		{
-			thumbnailBody = Body();
-			thumbnailBody.LoadSprite(child);
+			animatedThumbnail = Body();
+			animatedThumbnail.LoadSprite(child);
 		}
 		else if(key == "weapon")
 		{
@@ -495,9 +495,9 @@ const Sprite *Outfit::Thumbnail() const
 
 
 // Get the image to display in the outfitter when buying this item.
-const Body &Outfit::ThumbnailBody() const
+const Drawable &Outfit::AnimatedThumbnail() const
 {
-	return thumbnailBody;
+	return animatedThumbnail;
 }
 
 

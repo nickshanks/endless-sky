@@ -62,9 +62,9 @@ const Sprite *MapOutfitterPanel::SelectedSprite() const
 	if(!selected)
 		return nullptr;
 
-	Body body = selected->ThumbnailBody();
-	bool isAnimated = body.GetSprite() != nullptr;
-	const Sprite *thumbnail = isAnimated ? body.GetSprite() : selected->Thumbnail();
+	Drawable drawable = selected->AnimatedThumbnail();
+	bool isAnimated = drawable.GetSprite() != nullptr;
+	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selected->Thumbnail();
 	return thumbnail;
 }
 
@@ -75,10 +75,10 @@ void MapOutfitterPanel::DrawSelectedSprite(const Point &corner) const
 	if(!selected)
 		return;
 
-	Body body = selected->ThumbnailBody();
-	bool isAnimated = body.GetSprite() != nullptr;
-	float frame = isAnimated ? body.GetFrame(step) : 0.f;
-	const Sprite *thumbnail = isAnimated ? body.GetSprite() : selected->Thumbnail();
+	Drawable drawable = selected->AnimatedThumbnail();
+	bool isAnimated = drawable.GetSprite() != nullptr;
+	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
+	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selected->Thumbnail();
 	DrawSprite(corner, thumbnail, SelectedSpriteSwizzle(), frame);
 }
 
@@ -89,9 +89,9 @@ const Sprite *MapOutfitterPanel::CompareSprite() const
 	if(!compare)
 		return nullptr;
 
-	Body body = compare->ThumbnailBody();
-	bool isAnimated = body.GetSprite() != nullptr;
-	const Sprite *thumbnail = isAnimated ? body.GetSprite() : compare->Thumbnail();
+	Drawable drawable = compare->AnimatedThumbnail();
+	bool isAnimated = drawable.GetSprite() != nullptr;
+	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : compare->Thumbnail();
 	return thumbnail;
 }
 
@@ -102,10 +102,10 @@ void MapOutfitterPanel::DrawCompareSprite(const Point &corner) const
 	if(!compare)
 		return;
 
-	Body body = compare->ThumbnailBody();
-	bool isAnimated = body.GetSprite() != nullptr;
-	float frame = isAnimated ? body.GetFrame(step) : 0.f;
-	const Sprite *thumbnail = isAnimated ? body.GetSprite() : compare->Thumbnail();
+	Drawable drawable = compare->AnimatedThumbnail();
+	bool isAnimated = drawable.GetSprite() != nullptr;
+	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
+	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : compare->Thumbnail();
 	DrawSprite(corner, thumbnail, CompareSpriteSwizzle(), frame);
 }
 
@@ -302,9 +302,9 @@ void MapOutfitterPanel::DrawItems()
 				? "1 unit in storage"
 				: Format::Number(storedInSystem) + " units in storage";
 
-			const Sprite *thumbnailSprite = outfit->ThumbnailBody().GetSprite();
+			const Sprite *thumbnailSprite = outfit->AnimatedThumbnail().GetSprite();
 			const Sprite *sprite = thumbnailSprite ? thumbnailSprite : outfit->Thumbnail();
-			int frame = outfit->ThumbnailBody().GetFrame(step);
+			int frame = outfit->AnimatedThumbnail().GetFrame(step);
 			Draw(corner, sprite, Swizzle::None(), frame, isForSale, outfit == selected,
 				outfit->DisplayName(), "", price, info, storage_details);
 			list.push_back(outfit);
