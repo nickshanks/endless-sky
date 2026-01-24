@@ -130,6 +130,8 @@ OutfitterPanel::OutfitterPanel(PlayerInfo &player, Sale<Outfit> stock)
 
 void OutfitterPanel::Step()
 {
+	step++;
+
 	CheckRefill();
 	ShopPanel::Step();
 	ShopPanel::CheckForMissions(Mission::OUTFITTER);
@@ -306,8 +308,11 @@ double OutfitterPanel::DrawDetails(const Point &center)
 			collapsed.contains(DESCRIPTION));
 		selectedItem = selectedOutfit->DisplayName();
 
-		const Sprite *thumbnail = selectedOutfit->Thumbnail();
-		const float tileSize = thumbnail
+		Drawable drawable = selectedOutfit->AnimatedThumbnail();
+		bool isAnimated = drawable.GetSprite() != nullptr;
+		float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
+		const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selectedOutfit->Thumbnail();
+		float tileSize = thumbnail
 			? max(thumbnail->Height(), static_cast<float>(TileSize()))
 			: static_cast<float>(TileSize());
 		const Point thumbnailCenter(center.X(), center.Y() + 20 + static_cast<int>(tileSize / 2));
@@ -316,7 +321,7 @@ double OutfitterPanel::DrawDetails(const Point &center)
 		const Sprite *background = SpriteSet::Get("ui/outfitter unselected");
 		SpriteShader::Draw(background, thumbnailCenter);
 		if(thumbnail)
-			SpriteShader::Draw(thumbnail, thumbnailCenter);
+			SpriteShader::Draw(thumbnail, thumbnailCenter, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
 
 		const bool hasDescription = outfitInfo.DescriptionHeight();
 
@@ -1056,11 +1061,14 @@ bool OutfitterPanel::ShipCanRemove(const Ship *ship, const Outfit *outfit)
 
 void OutfitterPanel::DrawOutfit(const Outfit &outfit, const Point &center, bool isSelected, bool isOwned)
 {
-	const Sprite *thumbnail = outfit.Thumbnail();
+	Drawable drawable = outfit.AnimatedThumbnail();
+	bool isAnimated = drawable.GetSprite() != nullptr;
+	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
+	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : outfit.Thumbnail();
 	const Sprite *back = SpriteSet::Get(
 		isSelected ? "ui/outfitter selected" : "ui/outfitter unselected");
 	SpriteShader::Draw(back, center);
-	SpriteShader::Draw(thumbnail, center);
+	SpriteShader::Draw(thumbnail, center, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
 
 	// Draw the outfit name.
 	const string &name = outfit.DisplayName();

@@ -253,7 +253,7 @@ void MapShipyardPanel::DrawItems()
 				: parkedInSystem == 1
 				? "1 ship parked"
 				: Format::Number(parkedInSystem) + " ships parked";
-			Draw(corner, sprite, ship->CustomSwizzle(), isForSale, ship == selected,
+			Draw(corner, sprite, ship->CustomSwizzle(), 0, isForSale, ship == selected,
 					ship->DisplayModelName(), ship->VariantMapShopName(), price, info, parking_details);
 			list.push_back(ship);
 		}
