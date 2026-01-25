@@ -18,7 +18,6 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "DataNode.h"
 #include "DataWriter.h"
 #include "GameData.h"
-#include "image/Mask.h"
 #include "image/MaskManager.h"
 #include "pi.h"
 #include "Random.h"
@@ -34,7 +33,7 @@ using namespace std;
 
 // Constructor, based on a Sprite.
 Drawable::Drawable(const Sprite *sprite, double zoom, Point scale, double alpha)
-	: zoom(zoom), alpha(alpha), sprite(sprite), randomize(true)
+	: sprite(sprite), zoom(zoom), alpha(alpha), randomize(true)
 {
 }
 
@@ -118,26 +117,6 @@ float Drawable::GetFrame(int step) const
 
 
 
-// Get the mask for the given time step. If no time step is given, this will
-// return the mask from the most recently given step.
-const Mask &Drawable::GetMask(int step) const
-{
-	if(step >= 0)
-		SetStep(step);
-
-	static const Mask EMPTY;
-	int current = round(frame);
-	if(!sprite || current < 0)
-		return EMPTY;
-
-	const vector<Mask> &masks = GameData::GetMaskManager().GetMasks(sprite, Scale());
-
-	// Assume that if a masks array exists, it has the right number of frames.
-	return masks.empty() ? EMPTY : masks[current % masks.size()];
-}
-
-
-
 // Zoom factor. This controls how big the sprite should be drawn.
 double Drawable::Zoom() const
 {
@@ -149,14 +128,6 @@ double Drawable::Zoom() const
 Point Drawable::Scale() const
 {
 	return scale;
-}
-
-
-
-// Check if this object is marked for removal from the game.
-bool Drawable::ShouldBeRemoved() const
-{
-	return shouldBeRemoved;
 }
 
 
@@ -209,7 +180,7 @@ void Drawable::LoadSprite(const DataNode &node)
 			child.PrintTrace("Skipping unrecognized attribute:");
 	}
 
-	if(scale != Point(1., 1.))
+	if(scale != Point{1., 1.})
 		GameData::GetMaskManager().RegisterScale(sprite, Scale());
 }
 
@@ -228,7 +199,7 @@ void Drawable::SaveSprite(DataWriter &out, const string &tag) const
 			out.Write("frame rate", frameRate * 60.);
 		if(delay)
 			out.Write("delay", delay);
-		if(scale != Point(1., 1.))
+		if(scale != Point{1., 1.})
 			out.Write("scale", scale.X(), scale.Y());
 		if(randomize)
 			out.Write("random start frame");
@@ -283,22 +254,6 @@ void Drawable::AddFrameRate(float framesPerSecond)
 void Drawable::PauseAnimation()
 {
 	++pause;
-}
-
-
-
-// Mark this object to be removed from the game.
-void Drawable::MarkForRemoval()
-{
-	shouldBeRemoved = true;
-}
-
-
-
-// Mark this object to not be removed from the game.
-void Drawable::UnmarkForRemoval()
-{
-	shouldBeRemoved = false;
 }
 
 

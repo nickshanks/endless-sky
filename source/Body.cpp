@@ -15,6 +15,9 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "Body.h"
 
+#include "GameData.h"
+#include "image/Mask.h"
+#include "image/MaskManager.h"
 #include "pi.h"
 #include "image/Sprite.h"
 
@@ -40,6 +43,26 @@ Body::Body(const Body &sprite, Point position, Point velocity, Angle facing, dou
 	this->position = position;
 	this->velocity = velocity;
 	this->angle = facing;
+}
+
+
+
+// Get the mask for the given time step. If no time step is given, this will
+// return the mask from the most recently given step.
+const Mask &Body::GetMask(int step) const
+{
+	if(step >= 0)
+		SetStep(step);
+
+	static const Mask EMPTY;
+	int current = round(frame);
+	if(!sprite || current < 0)
+		return EMPTY;
+
+	const vector<Mask> &masks = GameData::GetMaskManager().GetMasks(sprite, Scale());
+
+	// Assume that if a masks array exists, it has the right number of frames.
+	return masks.empty() ? EMPTY : masks[current % masks.size()];
 }
 
 
@@ -84,6 +107,14 @@ Point Body::Unit() const
 
 
 
+// Check if this object is marked for removal from the game.
+bool Body::ShouldBeRemoved() const
+{
+	return shouldBeRemoved;
+}
+
+
+
 // Store the government here too, so that collision detection that is based
 // on the Body class can figure out which objects will collide.
 const Government *Body::GetGovernment() const
@@ -113,6 +144,22 @@ double Body::DistanceAlpha(const Point &drawCenter) const
 bool Body::IsVisible(const Point &drawCenter) const
 {
 	return DistanceAlpha(drawCenter) > 0.;
+}
+
+
+
+// Mark this object to be removed from the game.
+void Body::MarkForRemoval()
+{
+	shouldBeRemoved = true;
+}
+
+
+
+// Mark this object to not be removed from the game.
+void Body::UnmarkForRemoval()
+{
+	shouldBeRemoved = false;
 }
 
 
