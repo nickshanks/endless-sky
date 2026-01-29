@@ -27,6 +27,8 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "text/Format.h"
 #include "GameData.h"
 #include "Government.h"
+#include "Information.h"
+#include "Interface.h"
 #include "MapOutfitterPanel.h"
 #include "MapShipyardPanel.h"
 #include "Mission.h"
@@ -143,11 +145,16 @@ void ShopPanel::Draw()
 	DrawKey();
 
 	// Draw the Find button. Note: buttonZones are cleared in DrawButtons.
-	const Point findCenter = Screen::BottomRight() - Point(580, 20);
-	const Sprite *findIcon = SpriteSet::Get(hoverButton == 'f' ? "ui/find selected" : "ui/find unselected");
-	SpriteShader::Draw(findIcon, findCenter);
-	buttonZones.emplace_back(Rectangle(findCenter, {findIcon->Width(), findIcon->Height()}), 'f');
-	static const string FIND = "_Find";
+	// const Point findCenter = Screen::BottomRight() - Point(580, 20);
+	// const Sprite *findIcon = SpriteSet::Get(hoverButton == 'f' ? "ui/find selected" : "ui/find unselected");
+	// SpriteShader::Draw(findIcon, findCenter);
+	// buttonZones.emplace_back(Rectangle(findCenter, {findIcon->Width(), findIcon->Height()}), 'f');
+	// static const string FIND = "_Find";
+
+	Information info;
+	if(hoverButton == 'f')
+		info.SetCondition("hover");
+	GameData::Interfaces().Get("shop: find")->Draw(info, this);
 
 	shipInfo.DrawTooltips();
 	outfitInfo.DrawTooltips();
@@ -1466,6 +1473,11 @@ char ShopPanel::CheckButton(int x, int y)
 
 	// Check all the buttonZones.
 	for(const ClickZone<char> zone : buttonZones)
+		if(zone.Contains(clickPoint))
+			return zone.Value();
+
+	// Check other click zones.
+	for(const Panel::Zone zone : zones)
 		if(zone.Contains(clickPoint))
 			return zone.Value();
 

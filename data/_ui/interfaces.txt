@@ -2406,6 +2406,20 @@ interface "map: mission view: key"
 
 
 
+interface "shop: find" bottom right
+	button f "_Find"
+		center -580 -20
+		dimensions 26 26
+	visible if hover
+	sprite "ui/find selected"
+		center -580 -20
+	visible if !hover
+	sprite "ui/find unselected"
+		hover "ui/find selected"
+		center -580 -20
+
+
+
 interface "info panel"
 	sprite "ui/info panel"
 		center 0 -5
