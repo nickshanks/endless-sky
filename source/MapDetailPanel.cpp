@@ -146,8 +146,8 @@ void MapDetailPanel::Draw()
 
 	clickZones.clear();
 
-	DrawInfo();
 	DrawOrbits();
+	DrawInfo();
 	DrawKey();
 	FinishDrawing(isStars ? "is stars" : "is ports");
 }
@@ -371,6 +371,8 @@ bool MapDetailPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &command
 			}
 		}
 	}
+	else if(key == 'c')
+		player.SetEscortDestination();
 	else
 		return MapPanel::KeyDown(key, mod, command, isNewPress);
 
@@ -386,8 +388,6 @@ bool MapDetailPanel::Click(int x, int y, MouseButton button, int clicks)
 
 	if(button == MouseButton::RIGHT)
 	{
-		if(!Preferences::Has("System map sends move orders"))
-			return true;
 		if(commodity == SHOW_STARS && !player.CanView(*selectedSystem))
 			return true;
 
@@ -991,6 +991,11 @@ void MapDetailPanel::DrawInfo()
 		RemoveChild(description.get());
 		descriptionVisible = false;
 	}
+
+	Information mapInterfaceInfo;
+	if(player.HasEscortDestination())
+		mapInterfaceInfo.SetCondition("has escort destination");
+	mapInterface->Draw(mapInterfaceInfo, this);
 }
 
 

@@ -105,7 +105,7 @@ namespace {
 			case OutfitterPanel::OutfitLocation::Storage:
 				return "storage";
 			default:
-				throw "unreachable";
+				throw runtime_error("unreachable");
 		}
 	}
 }
@@ -377,9 +377,9 @@ ShopPanel::TransactionResult OutfitterPanel::CanMoveOutfit(OutfitLocation fromLo
 
 	// Prevent coding up bad combinations.
 	if(fromLocation == toLocation)
-		throw "unreachable; to and from are the same";
+		throw runtime_error("unreachable; to and from are the same");
 	if(fromLocation == OutfitLocation::Shop && toLocation == OutfitLocation::Storage)
-		throw "unreachable; unsupported to/from combination";
+		throw runtime_error("unreachable; unsupported to/from combination");
 
 	// Handle special cases such as maps and licenses.
 	int mapSize = selectedOutfit->Get("map");
@@ -392,15 +392,20 @@ ShopPanel::TransactionResult OutfitterPanel::CanMoveOutfit(OutfitLocation fromLo
 		bool mapMinables = selectedOutfit->Get("map minables");
 		if(mapSize > 0 && player.HasMapped(mapSize, mapMinables))
 			return "You have already obtained all the information included in this map, so there is no reason to buy it.";
+		return true;
 	}
 
-	if(HasLicense(selectedOutfit->TrueName()))
+	if(IsLicense(selectedOutfit->TrueName()))
 	{
-		if(fromLocation != OutfitLocation::Shop)
-			return "You cannot " + actionName + " licenses. Once you obtain one, it is yours permanently.";
-		if(toLocation == OutfitLocation::Cargo || toLocation == OutfitLocation::Storage)
-			return "You cannot place licenses into " + LocationName(toLocation) + ".";
-		return "You already have one of these licenses, so there is no reason to buy another.";
+		if(HasLicense(selectedOutfit->TrueName()))
+		{
+			if(fromLocation != OutfitLocation::Shop)
+				return "You cannot " + actionName + " licenses. Once you obtain one, it is yours permanently.";
+			if(toLocation == OutfitLocation::Cargo || toLocation == OutfitLocation::Storage)
+				return "You cannot place licenses into " + LocationName(toLocation) + ".";
+			return "You already have one of these licenses, so there is no reason to buy another.";
+		}
+		return true;
 	}
 
 	bool canSource = false;
@@ -546,7 +551,7 @@ ShopPanel::TransactionResult OutfitterPanel::CanMoveOutfit(OutfitLocation fromLo
 			break;
 		}
 		default:
-			throw "unreachable";
+			throw runtime_error("unreachable");
 	}
 
 	// Collect relevant errors.
@@ -672,7 +677,7 @@ ShopPanel::TransactionResult OutfitterPanel::CanMoveOutfit(OutfitLocation fromLo
 			break;
 		}
 		default:
-			throw "unreachable";
+			throw runtime_error("unreachable");
 	}
 
 	return canSource && canPlace;

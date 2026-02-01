@@ -180,7 +180,7 @@ void Drawable::LoadSprite(const DataNode &node)
 			child.PrintTrace("Skipping unrecognized attribute:");
 	}
 
-	if(scale != Point{1., 1.})
+	if(scale != Point(1., 1.))
 		GameData::GetMaskManager().RegisterScale(sprite, Scale());
 }
 
@@ -195,11 +195,10 @@ void Drawable::SaveSprite(DataWriter &out, const string &tag) const
 	out.Write(tag, sprite->Name());
 	out.BeginChild();
 	{
-		if(frameRate != static_cast<float>(2. / 60.))
-			out.Write("frame rate", frameRate * 60.);
+		out.Write("frame rate", frameRate * 60.);
 		if(delay)
 			out.Write("delay", delay);
-		if(scale != Point{1., 1.})
+		if(scale != Point(1., 1.))
 			out.Write("scale", scale.X(), scale.Y());
 		if(randomize)
 			out.Write("random start frame");
