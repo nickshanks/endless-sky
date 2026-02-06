@@ -162,6 +162,11 @@ namespace {
 		return lhs->RequiredCrew() < rhs->RequiredCrew();
 	}
 
+	bool CompareCombatStrength(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
+	{
+		return lhs->Deterrence() < rhs->Deterrence();
+	}
+
 	bool CompareCargo(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
 		int left = lround(lhs->Attributes().Get("cargo space") - lhs->Cargo().Used());
@@ -191,6 +196,8 @@ namespace {
 			return ReverseCompare<CompareHull>;
 		else if(f == CompareFuel)
 			return ReverseCompare<CompareFuel>;
+		else if(f == CompareCombatStrength)
+			return ReverseCompare<CompareCombatStrength>;
 		else if(f == CompareCargo)
 			return ReverseCompare<CompareCargo>;
 		return ReverseCompare<CompareRequiredCrew>;
@@ -206,6 +213,7 @@ const vector<PlayerInfoPanel::SortableColumn> PlayerInfoPanel::columns = {
 	SortableColumn("hull", "Hull integrity", {57, Alignment::RIGHT, Truncate::BACK}, CompareHull),
 	SortableColumn("fuel", "Fuel", {57, Alignment::RIGHT, Truncate::BACK}, CompareFuel),
 	SortableColumn("crew", "Crew", {57, Alignment::RIGHT, Truncate::BACK}, CompareRequiredCrew),
+	SortableColumn("combat", "Combat strength", {57, Alignment::RIGHT, Truncate::BACK}, CompareCombatStrength),
 	SortableColumn("free cargo", "Free cargo space", {77, Alignment::RIGHT, Truncate::BACK}, CompareCargo),
 };
 
@@ -893,6 +901,8 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 					crewCount = min(crewCount, ship.RequiredCrew());
 				row.emplace_back(ship.IsParked() ? "parked" : to_string(crewCount));
 			}
+			else if(column.name == "combat")
+				row.emplace_back(to_string(lround(ship.Deterrence() * 100.)));
 			else if(column.name == "free cargo")
 				row.emplace_back(to_string(lround(ship.Attributes().Get("cargo space") - ship.Cargo().Used())));
 			else
