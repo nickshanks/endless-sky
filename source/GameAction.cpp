@@ -108,7 +108,7 @@ namespace {
 				special += " put in your cargo hold because there is not enough space to install ";
 				special += (isSingle ? "it" : "them");
 				special += " in your ship.";
-				ui->Push(new DialogPanel(special));
+				ui->Push(DialogPanel::Info(special));
 			}
 		}
 		if(didCargo && didShip)

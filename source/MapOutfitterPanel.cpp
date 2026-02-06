@@ -20,6 +20,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "CoreStartData.h"
 #include "text/Format.h"
 #include "GameData.h"
+#include "Information.h"
 #include "Outfit.h"
 #include "Planet.h"
 #include "PlayerInfo.h"
@@ -209,8 +210,7 @@ int MapOutfitterPanel::FindItem(const string &text) const
 void MapOutfitterPanel::DrawKey(Information &info) const
 {
 	const string condition = (selected && selected->Get("minable") > 0.)
-		? "is outfitters w/ minerals"
-		: "is outfitters";
+		? "is outfitters w/ minerals" : "is outfitters";
 
 	info.SetCondition(condition);
 

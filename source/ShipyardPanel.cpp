@@ -217,16 +217,17 @@ void ShipyardPanel::DrawButtons()
 	Rectangle buttonsFooter(Screen::BottomRight() - .5 * buttonBoxSize, buttonBoxSize);
 	string tooltip = GameData::Tooltip(string("shipyard: ") + hoverButton);
 	if(!tooltip.empty())
+	{
 		buttonsTooltip.IncrementCount();
+		if(buttonsTooltip.ShouldDraw())
+		{
+			buttonsTooltip.SetZone(buttonsFooter);
+			buttonsTooltip.SetText(tooltip, true);
+			buttonsTooltip.Draw();
+		}
+	}
 	else
 		buttonsTooltip.DecrementCount();
-
-	if(buttonsTooltip.ShouldDraw())
-	{
-		buttonsTooltip.SetZone(buttonsFooter);
-		buttonsTooltip.SetText(tooltip, true);
-		buttonsTooltip.Draw();
-	}
 
 	// Draw the tooltip for your full number of credits.
 	const Point creditsPoint(
@@ -234,16 +235,17 @@ void ShipyardPanel::DrawButtons()
 		Screen::Bottom() - buttonBoxHeight + 10);
 	const Rectangle creditsBox = Rectangle::FromCorner(creditsPoint, Point(SIDEBAR_WIDTH - 20, 15));
 	if(creditsBox.Contains(hoverPoint))
+	{
 		creditsTooltip.IncrementCount();
+		if(creditsTooltip.ShouldDraw())
+		{
+			creditsTooltip.SetZone(creditsBox);
+			creditsTooltip.SetText(Format::CreditString(player.Accounts().Credits(), false), true);
+			creditsTooltip.Draw();
+		}
+	}
 	else
 		creditsTooltip.DecrementCount();
-
-	if(creditsTooltip.ShouldDraw())
-	{
-		creditsTooltip.SetZone(creditsBox);
-		creditsTooltip.SetText(Format::CreditString(player.Accounts().Credits(), false), true);
-		creditsTooltip.Draw();
-	}
 }
 
 
@@ -339,7 +341,7 @@ void ShipyardPanel::DoBuyButton()
 	else
 		message += selectedShip->PluralModelName() + "! (Or leave it blank to use randomly chosen names.)";
 
-	GetUI().Push(new ShipNameDialogPanel(this,
+	GetUI().Push(ShipNameDialogPanel::Create(
 			DialogPanel::FunctionButton(this, "Buy", 'b', &ShipyardPanel::BuyShip),
 			message));
 }
@@ -408,10 +410,10 @@ void ShipyardPanel::Sell(bool storeOutfits)
 	if(storeOutfits)
 	{
 		message += " Any outfits will be placed in storage.";
-		GetUI().Push(new DialogPanel(this, &ShipyardPanel::SellShipChassis, message, Truncate::MIDDLE));
+		GetUI().Push(DialogPanel::CallFunctionIfOk(this, &ShipyardPanel::SellShipChassis, message, Truncate::MIDDLE));
 	}
 	else
-		GetUI().Push(new DialogPanel(this, &ShipyardPanel::SellShipAndOutfits, message, Truncate::MIDDLE));
+		GetUI().Push(DialogPanel::CallFunctionIfOk(this, &ShipyardPanel::SellShipAndOutfits, message, Truncate::MIDDLE));
 }
 
 

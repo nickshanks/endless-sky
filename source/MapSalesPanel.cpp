@@ -126,8 +126,7 @@ bool MapSalesPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &command,
 		ScrollTo(selected);
 	}
 	else if(key == 'f')
-		GetUI().Push(new DialogPanel(
-			this, &MapSalesPanel::DoFind, "Search for:"));
+		GetUI().Push(DialogPanel::RequestString(this, &MapSalesPanel::DoFind, "Search for:"));
 	else
 		return MapPanel::KeyDown(key, mod, command, isNewPress);
 
@@ -142,7 +141,7 @@ bool MapSalesPanel::Click(int x, int y, MouseButton button, int clicks)
 	if(button != MouseButton::LEFT)
 		return MapPanel::Click(x, y, button, clicks);
 
-	const Interface *keyInterface = GameData::Interfaces().Get("sales key");
+	const Interface *keyInterface = GameData::Interfaces().Get("map: sales key");
 	const Rectangle keyContentBox = keyInterface->GetBox("content");
 	if(x < Screen::Left() + WIDTH)
 	{

@@ -20,6 +20,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "CoreStartData.h"
 #include "text/Format.h"
 #include "GameData.h"
+#include "Information.h"
 #include "Planet.h"
 #include "PlayerInfo.h"
 #include "Point.h"
@@ -94,15 +95,6 @@ const ItemInfoDisplay &MapShipyardPanel::SelectedInfo() const
 const ItemInfoDisplay &MapShipyardPanel::CompareInfo() const
 {
 	return compareInfo;
-}
-
-
-
-void MapShipyardPanel::DrawKey(Information &info) const
-{
-	info.SetCondition("is shipyards");
-
-	MapSalesPanel::DrawKey(info);
 }
 
 
@@ -184,6 +176,15 @@ int MapShipyardPanel::FindItem(const string &text) const
 		}
 	}
 	return bestItem;
+}
+
+
+
+void MapShipyardPanel::DrawKey(Information &info) const
+{
+	info.SetCondition("is shipyards");
+
+	MapSalesPanel::DrawKey(info);
 }
 
 

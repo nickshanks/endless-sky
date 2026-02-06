@@ -25,6 +25,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <vector>
 
 class CategoryList;
+class Information;
 class ItemInfoDisplay;
 class PlayerInfo;
 class Point;
