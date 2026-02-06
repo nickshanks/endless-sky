@@ -17,7 +17,9 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "text/Alignment.h"
 #include "audio/Audio.h"
+#include "ColumnChooserPanel.h"
 #include "Command.h"
+#include "shader/FillShader.h"
 #include "text/Font.h"
 #include "text/FontSet.h"
 #include "text/Format.h"
@@ -32,8 +34,12 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "PlayerInfo.h"
 #include "Preferences.h"
 #include "Rectangle.h"
+#include "Screen.h"
 #include "Ship.h"
 #include "ShipInfoPanel.h"
+#include "image/Sprite.h"
+#include "image/SpriteSet.h"
+#include "shader/SpriteShader.h"
 #include "System.h"
 #include "text/Table.h"
 #include "text/Truncate.h"
@@ -85,6 +91,31 @@ namespace {
 		}
 	}
 
+	void DrawTooltip(const string &text, const Point &hoverPoint)
+	{
+		if(text.empty())
+			return;
+
+		const int WIDTH = 250;
+		const int PAD = 10;
+		WrappedText wrap(FontSet::Get(14));
+		wrap.SetWrapWidth(WIDTH - 2 * PAD);
+		wrap.Wrap(text);
+		int longest = wrap.LongestLineWidth();
+		if(longest < wrap.WrapWidth())
+		{
+			wrap.SetWrapWidth(longest);
+			wrap.Wrap(text);
+		}
+
+		const Color *backColor = GameData::Colors().Get("tooltip background");
+		const Color *textColor = GameData::Colors().Get("medium");
+		Point textSize(wrap.WrapWidth() + 2 * PAD, wrap.Height() + 2 * PAD - wrap.ParagraphBreak());
+		Point anchor = hoverPoint + Point(0., textSize.Y());
+		FillShader::Fill(anchor - .5 * textSize, textSize, *backColor);
+		wrap.Draw(anchor - textSize + Point(PAD, PAD), *textColor);
+	}
+
 	bool CompareName(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
 		return lhs->GivenName() < rhs->GivenName();
@@ -131,9 +162,11 @@ namespace {
 		return lhs->RequiredCrew() < rhs->RequiredCrew();
 	}
 
-	bool CompareDeterrence(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
+	bool CompareCargo(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
-		return lhs->Deterrence() < rhs->Deterrence();
+		int left = lround(lhs->Attributes().Get("cargo space") - lhs->Cargo().Used());
+		int right = lround(rhs->Attributes().Get("cargo space") - rhs->Cargo().Used());
+		return left < right;
 	}
 
 	// A helper function for reversing the arguments of the given function F.
@@ -144,36 +177,36 @@ namespace {
 	}
 
 	// Reverses the argument order of the given comparator function.
-	InfoPanelState::ShipComparator &GetReverseCompareFrom(InfoPanelState::ShipComparator &f)
+	InfoPanelState::ShipComparator &GetReverseCompareFrom(InfoPanelState::ShipComparator f)
 	{
-		if(f == &CompareName)
+		if(f == CompareName)
 			return ReverseCompare<CompareName>;
-		else if(f == &CompareModelName)
+		else if(f == CompareModelName)
 			return ReverseCompare<CompareModelName>;
-		else if(f == &CompareSystem)
+		else if(f == CompareSystem)
 			return ReverseCompare<CompareSystem>;
-		else if(f == &CompareShields)
+		else if(f == CompareShields)
 			return ReverseCompare<CompareShields>;
-		else if(f == &CompareHull)
+		else if(f == CompareHull)
 			return ReverseCompare<CompareHull>;
-		else if(f == &CompareFuel)
+		else if(f == CompareFuel)
 			return ReverseCompare<CompareFuel>;
-		else if(f == &CompareDeterrence)
-			return ReverseCompare<CompareDeterrence>;
+		else if(f == CompareCargo)
+			return ReverseCompare<CompareCargo>;
 		return ReverseCompare<CompareRequiredCrew>;
 	}
 }
 
 // Table columns and their starting x positions, end x positions, alignment and sort comparator.
-const PlayerInfoPanel::SortableColumn PlayerInfoPanel::columns[] = {
-	SortableColumn("ship", {202, Truncate::MIDDLE}, CompareName),
-	SortableColumn("model", {127, Truncate::BACK}, CompareModelName),
-	SortableColumn("system", {92, Truncate::BACK}, CompareSystem),
-	SortableColumn("shields", {57, Alignment::RIGHT, Truncate::BACK}, CompareShields),
-	SortableColumn("hull", {57, Alignment::RIGHT, Truncate::BACK}, CompareHull),
-	SortableColumn("fuel", {57, Alignment::RIGHT, Truncate::BACK}, CompareFuel),
-	SortableColumn("combat", {57, Alignment::RIGHT, Truncate::BACK}, CompareDeterrence),
-	SortableColumn("crew", {57, Alignment::RIGHT, Truncate::BACK}, CompareRequiredCrew)
+const vector<PlayerInfoPanel::SortableColumn> PlayerInfoPanel::columns = {
+	SortableColumn("ship", "Ship name", {217, Truncate::MIDDLE}, CompareName),
+	SortableColumn("model", "Ship model", {127, Truncate::BACK}, CompareModelName),
+	SortableColumn("system", "Current system", {137, Truncate::BACK}, CompareSystem),
+	SortableColumn("shields", "Shield strength", {57, Alignment::RIGHT, Truncate::BACK}, CompareShields),
+	SortableColumn("hull", "Hull integrity", {57, Alignment::RIGHT, Truncate::BACK}, CompareHull),
+	SortableColumn("fuel", "Fuel", {57, Alignment::RIGHT, Truncate::BACK}, CompareFuel),
+	SortableColumn("crew", "Crew", {57, Alignment::RIGHT, Truncate::BACK}, CompareRequiredCrew),
+	SortableColumn("free cargo", "Free cargo space", {77, Alignment::RIGHT, Truncate::BACK}, CompareCargo),
 };
 
 
@@ -221,7 +254,8 @@ void PlayerInfoPanel::Step()
 void PlayerInfoPanel::Draw()
 {
 	// Dim everything behind this panel.
-	DrawBackdrop();
+	if(GetUI().IsTop(this))
+		DrawBackdrop();
 
 	// Fill in the information for how this interface should be drawn.
 	Information interfaceInfo;
@@ -289,6 +323,13 @@ void PlayerInfoPanel::Draw()
 
 	DrawPlayer(infoPanelUi->GetBox("player"));
 	DrawFleet(infoPanelUi->GetBox("fleet"));
+
+	// draw closed column chooser pop-up
+	if(GetUI().IsTop(this))
+	{
+		const Interface *columnChooser = GameData::Interfaces().Get("columns menu");
+		columnChooser->Draw(interfaceInfo, this);
+	}
 }
 
 
@@ -524,6 +565,8 @@ bool PlayerInfoPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &comman
 			ScrollAbsolute(panelState.SelectedIndex());
 		}
 	}
+	else if(key == 'n')
+		GetUI().Push(new ColumnChooserPanel(columns, &panelState));
 	else
 		return false;
 
@@ -542,7 +585,7 @@ bool PlayerInfoPanel::Click(int x, int y, MouseButton button, int clicks)
 	for(auto &zone : menuZones)
 		if(zone.Contains(mouse))
 		{
-			SortShips(*zone.Value());
+			SortShips(*zone.Value()->shipSort);
 			return true;
 		}
 
@@ -736,9 +779,13 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 	// Table attributes.
 	Table table;
 	static const int GUTTER = 3;
+	const set<string> visibleColumns = panelState.VisibleColumns();
 	int offset = 0;
 	for(const auto &column : columns)
 	{
+		if(visibleColumns.find(column.name) == visibleColumns.end())
+			continue;
+
 		table.AddColumn(offset + (column.layout.align == Alignment::RIGHT
 			? column.layout.width : 0), column.layout);
 		offset += column.layout.width + GUTTER;
@@ -754,8 +801,11 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 	offset = 0;
 	for(const auto &column : columns)
 	{
-		Rectangle zone = Rectangle(tablePoint + Point(offset, 0) +
-			.5 * Point(column.layout.width - GUTTER, rowHeight),
+		if(visibleColumns.find(column.name) == visibleColumns.end())
+			continue;
+
+		Rectangle zone = Rectangle(
+			tablePoint + Point(offset, 0) + .5 * Point(column.layout.width - GUTTER, rowHeight),
 			Point(column.layout.width, rowHeight)
 		);
 		offset += column.layout.width + GUTTER;
@@ -768,7 +818,7 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 
 		table.Draw(column.name, columnHeaderColor);
 
-		menuZones.emplace_back(zone, column.shipSort);
+		menuZones.emplace_back(zone, &column);
 	}
 
 	table.DrawGap(5);
@@ -813,6 +863,9 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 		std::vector<std::string> row;
 		for(const auto &column : columns)
 		{
+			if(visibleColumns.find(column.name) == visibleColumns.end())
+				continue;
+
 			// Decided an if-else chain was less faff than using a switch on a std::string hash, or an enum.
 			if(column.name == "ship")
 				// Indent the ship name if it is a fighter or drone.
@@ -822,7 +875,7 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 			else if(column.name == "system")
 			{
 				const System *system = ship.GetSystem();
-				row.emplace_back(system ? (player.KnowsName(*system) ? system->DisplayName() : "???") : "");
+				row.emplace_back(system ? (player.KnowsName(*system) ? system->DisplayName() : "unexplored system") : "");
 			}
 			else if(column.name == "shields")
 				row.emplace_back(Format::Percentage(max(0., ship.Shields()), 0));
@@ -838,10 +891,10 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 				int crewCount = ship.Crew();
 				if(!isFlagship)
 					crewCount = min(crewCount, ship.RequiredCrew());
-				row.emplace_back(ship.IsParked() ? "Parked" : to_string(crewCount));
+				row.emplace_back(ship.IsParked() ? "parked" : to_string(crewCount));
 			}
-			else if(column.name == "combat")
-				row.emplace_back(to_string(lround(ship.Deterrence() * 100.)));
+			else if(column.name == "free cargo")
+				row.emplace_back(to_string(lround(ship.Attributes().Get("cargo space") - ship.Cargo().Used())));
 			else
 				row.emplace_back("-");
 		}
@@ -851,6 +904,10 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 
 		++index;
 	}
+
+	for(auto &zone : menuZones)
+		if(zone.Contains(hoverPoint))
+			DrawTooltip(zone.Value()->Tooltip(), hoverPoint);
 
 	// Re-ordering ships in your fleet.
 	if(isDragging)
@@ -877,7 +934,7 @@ void PlayerInfoPanel::SortShips(InfoPanelState::ShipComparator *shipComparator)
 
 	// Clicking on a sort column twice reverses the comparison.
 	if(panelState.CurrentSort() == shipComparator)
-		shipComparator = GetReverseCompareFrom(*shipComparator);
+		shipComparator = GetReverseCompareFrom(shipComparator);
 
 	// Save selected ships to preserve selection after sort.
 	multiset<shared_ptr<Ship>, InfoPanelState::ShipComparator *> selectedShips(shipComparator);
@@ -974,9 +1031,17 @@ bool PlayerInfoPanel::Scroll(int distance)
 
 PlayerInfoPanel::SortableColumn::SortableColumn(
 	string name,
+	string checkboxLabel,
 	Layout layout,
 	InfoPanelState::ShipComparator *shipSort
 )
-	: name(name), layout(layout), shipSort(shipSort)
+	: name(name), checkboxLabel(checkboxLabel), layout(layout), shipSort(shipSort)
 {
+}
+
+
+
+const string &PlayerInfoPanel::SortableColumn::Tooltip() const
+{
+	return GameData::Tooltip(name + " column");
 }

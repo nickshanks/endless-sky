@@ -1636,3 +1636,7 @@ tip "Title bar theme"
 
 tip "Window rounding"
 	`Control the appearance of window corners. (Available on Windows 11.)`
+
+# Player info panel
+tip "crew column"
+	`Crew currently aboard the ship. May be fewer than minimum complement.`
