@@ -804,8 +804,8 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 		if(visibleColumns.find(column.name) == visibleColumns.end())
 			continue;
 
-		Rectangle zone = Rectangle(tablePoint + Point(offset, 0) +
-			.5 * Point(column.layout.width - GUTTER, rowHeight),
+		Rectangle zone = Rectangle(
+			tablePoint + Point(offset, 0) + .5 * Point(column.layout.width - GUTTER, rowHeight),
 			Point(column.layout.width, rowHeight)
 		);
 		offset += column.layout.width + GUTTER;
