@@ -779,7 +779,7 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 	// Table attributes.
 	Table table;
 	static const int GUTTER = 3;
-	const set<const string> visibleColumns = panelState.VisibleColumns();
+	const set<string> visibleColumns = panelState.VisibleColumns();
 	int offset = 0;
 	for(const auto &column : columns)
 	{
