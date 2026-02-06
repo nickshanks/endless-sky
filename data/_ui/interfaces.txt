@@ -2969,38 +2969,22 @@ interface "map: sales key"
 		center 340 -72
 		dimensions 9 9
 		size 1.75
-<<<<<<< HEAD
-		color "map: system marker: blue"
-=======
 		color "map: sale marker: no shop"
->>>>>>> master
 	ring full
 		center 340 -52
 		dimensions 9 9
 		size 1.75
-<<<<<<< HEAD
-		color "map: system marker: cyan"
-=======
 		color "map: sale marker: has shop"
->>>>>>> master
 	ring full
 		center 340 -32
 		dimensions 9 9
 		size 1.75
-<<<<<<< HEAD
-		color "map: system marker: yellow"
-=======
 		color "map: sale marker: item sold"
->>>>>>> master
 	ring full
 		center 340 -12
 		dimensions 9 9
 		size 1.75
-<<<<<<< HEAD
-		color "map: system marker: lime"
-=======
 		color "map: sale marker: item stored"
->>>>>>> master
 
 	visible if "is shipyards"
 	label "Has no shipyard",
