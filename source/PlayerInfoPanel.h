@@ -21,6 +21,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "InfoPanelState.h"
 #include "text/Layout.h"
 #include "Point.h"
+#include "Tooltip.h"
 
 #include <set>
 #include <vector>
@@ -57,19 +58,6 @@ protected:
 
 
 private:
-	// Draw the two subsections of this panel.
-	void DrawPlayer(const Rectangle &bounds);
-	void DrawFleet(const Rectangle &bounds);
-
-	// Handle mouse hover (also including hover during drag actions):
-	bool Hover(const Point &point);
-	// Adjust the scroll by the given amount. Return true if it changed.
-	bool Scroll(int distance);
-	// Try to scroll to the given position. Return true if position changed.
-	bool ScrollAbsolute(int scroll);
-
-	void SortShips(InfoPanelState::ShipComparator *shipComparator);
-
 	class SortableColumn {
 	public:
 		SortableColumn(std::string name, double offset, double endX, Layout layout, InfoPanelState::ShipComparator *shipSort);
@@ -82,6 +70,22 @@ private:
 		Layout layout;
 		InfoPanelState::ShipComparator *shipSort = nullptr;
 	};
+
+
+private:
+	// Draw the two subsections of this panel.
+	void DrawPlayer(const Rectangle &bounds);
+	void DrawFleet(const Rectangle &bounds);
+	void DrawTooltip();
+
+	void SortShips(InfoPanelState::ShipComparator *shipComparator);
+
+	// Handle mouse hover (also including hover during drag actions):
+	bool Hover(const Point &point);
+	// Adjust the scroll by the given amount. Return true if it changed.
+	bool Scroll(int distance);
+	// Try to scroll to the given position. Return true if position changed.
+	bool ScrollAbsolute(int scroll);
 
 private:
 	PlayerInfo &player;
@@ -99,6 +103,8 @@ private:
 	// Initialize mouse point to something off-screen to not
 	// make the game think the player is hovering on something.
 	Point hoverPoint = Point(-10000, -10000);
+	ClickZone<const SortableColumn *> *hoverZone = nullptr;
+	Tooltip tooltip;
 
 	// When reordering ships, the names of ships being moved are displayed alongside the cursor.
 	bool isDragging = false;

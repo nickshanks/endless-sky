@@ -18,7 +18,6 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "text/Alignment.h"
 #include "audio/Audio.h"
 #include "Command.h"
-#include "shader/FillShader.h"
 #include "text/Font.h"
 #include "text/FontSet.h"
 #include "text/Format.h"
@@ -85,31 +84,6 @@ namespace {
 			else
 				table.Advance();
 		}
-	}
-
-	void DrawTooltip(const string &text, const Point &hoverPoint)
-	{
-		if(text.empty())
-			return;
-
-		const int WIDTH = 250;
-		const int PAD = 10;
-		WrappedText wrap(FontSet::Get(14));
-		wrap.SetWrapWidth(WIDTH - 2 * PAD);
-		wrap.Wrap(text);
-		int longest = wrap.LongestLineWidth();
-		if(longest < wrap.WrapWidth())
-		{
-			wrap.SetWrapWidth(longest);
-			wrap.Wrap(text);
-		}
-
-		const Color *backColor = GameData::Colors().Get("tooltip background");
-		const Color *textColor = GameData::Colors().Get("medium");
-		Point textSize(wrap.WrapWidth() + 2 * PAD, wrap.Height() + 2 * PAD - wrap.ParagraphBreak());
-		Point anchor = hoverPoint + Point(0., textSize.Y());
-		FillShader::Fill(anchor - .5 * textSize, textSize, *backColor);
-		wrap.Draw(anchor - textSize + Point(PAD, PAD), *textColor);
 	}
 
 	bool CompareName(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
@@ -203,7 +177,10 @@ PlayerInfoPanel::PlayerInfoPanel(PlayerInfo &player)
 }
 
 PlayerInfoPanel::PlayerInfoPanel(PlayerInfo &player, InfoPanelState panelState)
-	: player(player), panelState(panelState)
+	: player(player),
+	panelState(panelState),
+	tooltip(250, Alignment::LEFT, Tooltip::Direction::DOWN_LEFT, Tooltip::Corner::TOP_LEFT,
+		GameData::Colors().Get("tooltip background"), GameData::Colors().Get("medium"))
 {
 	Audio::Pause();
 	SetInterruptible(false);
@@ -846,9 +823,21 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 		++index;
 	}
 
+	ClickZone<const SortableColumn *> *previousZone = hoverZone;
+	hoverZone = nullptr;
 	for(auto &zone : menuZones)
 		if(zone.Contains(hoverPoint))
-			DrawTooltip(zone.Value()->Tooltip(), hoverPoint);
+		{
+			if(previousZone == &zone)
+				tooltip.IncrementCount();
+			else
+			{
+				tooltip.ResetCount();
+				tooltip.Clear();
+			}
+			hoverZone = &zone;
+			break;
+		}
 
 	// Re-ordering ships in your fleet.
 	if(isDragging)
@@ -862,6 +851,13 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 			font.Draw(name, pos, bright);
 			pos.Y() += 20.;
 		}
+	}
+	else if(hoverZone)
+	{
+		if(!tooltip.HasText())
+			tooltip.SetText(hoverZone->Value()->Tooltip(), true);
+		tooltip.SetZone(*hoverZone);
+		tooltip.Draw();
 	}
 }
 
