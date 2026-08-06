@@ -54,24 +54,25 @@ void AudioPlayer::Update()
 	ALint buffersDone = 0;
 	alGetSourcei(alSource, AL_BUFFERS_PROCESSED, &buffersDone);
 
-	if(!buffersDone)
+	ALint buffersQueued = 0;
+	alGetSourcei(alSource, AL_BUFFERS_QUEUED, &buffersQueued);
+
+	ALint state;
+	alGetSourcei(alSource, AL_SOURCE_STATE, &state);
+
+	if(!buffersDone && state != AL_STOPPED)
 		return;
 
 	if(!audioSupplier->MaxChunks() || shouldStop)
 	{
 		// No chunks left to play.
-		ALint buffersQueued = 0;
-		alGetSourcei(alSource, AL_BUFFERS_QUEUED, &buffersQueued);
-
-		ALint state;
-		alGetSourcei(alSource, AL_SOURCE_STATE, &state);
-
-		if(buffersDone == buffersQueued && state == AL_STOPPED)
+		if(state == AL_STOPPED)
 		{
 			// All queued buffers finished, and we don't have any others left. Playback has finished.
 			// Unqueue all buffers and return them, then release the source.
-			vector<ALuint> buffers(buffersDone);
-			alSourceUnqueueBuffers(alSource, buffers.size(), buffers.data());
+			vector<ALuint> buffers(buffersQueued);
+			if(!buffers.empty())
+				alSourceUnqueueBuffers(alSource, buffers.size(), buffers.data());
 
 			for(ALuint buffer : buffers)
 				AudioSupplier::DestroyBuffer(buffer);
@@ -85,11 +86,16 @@ void AudioPlayer::Update()
 	{
 		// Queue as many buffers as possible.
 		vector<ALuint> buffers(min(static_cast<size_t>(buffersDone), audioSupplier->AvailableChunks()));
-		alSourceUnqueueBuffers(alSource, buffers.size(), buffers.data());
+		if(!buffers.empty())
+			alSourceUnqueueBuffers(alSource, buffers.size(), buffers.data());
 
 		for(ALuint &buffer : buffers)
 			audioSupplier->NextChunk(buffer, spatial);
-		alSourceQueueBuffers(alSource, buffers.size(), buffers.data());
+		if(!buffers.empty())
+			alSourceQueueBuffers(alSource, buffers.size(), buffers.data());
+
+		if(state == AL_STOPPED && buffersQueued > 0)
+			alSourcePlay(alSource);
 	}
 }
 
@@ -206,10 +212,28 @@ bool AudioPlayer::ClaimSource()
 	if(alSource)
 		return true;
 
-	if(!availableSources.empty())
+	while(!availableSources.empty())
 	{
 		alSource = availableSources.back();
 		availableSources.pop_back();
+		if(!alIsSource(alSource))
+		{
+			alSource = 0;
+			continue;
+		}
+
+		// A reused source may still have state from its previous owner.
+		alSourceStop(alSource);
+		ALint buffersQueued = 0;
+		alGetSourcei(alSource, AL_BUFFERS_QUEUED, &buffersQueued);
+		if(buffersQueued > 0)
+		{
+			vector<ALuint> buffers(buffersQueued);
+			alSourceUnqueueBuffers(alSource, buffers.size(), buffers.data());
+			for(ALuint buffer : buffers)
+				AudioSupplier::DestroyBuffer(buffer);
+		}
+
 		ConfigureSource();
 		return true;
 	}
@@ -239,6 +263,8 @@ void AudioPlayer::ReleaseSource()
 {
 	if(!alSource)
 		return;
+
+	alSourceStop(alSource);
 
 	availableSources.emplace_back(alSource);
 	alSource = 0;

@@ -242,6 +242,8 @@ void Audio::Update(const Point &listenerPosition)
 
 	listener = listenerPosition;
 
+	unique_lock<mutex> lock(audioMutex);
+
 	for(const auto &it : deferred)
 		soundQueue[it.first].Add(it.second);
 	deferred.clear();
