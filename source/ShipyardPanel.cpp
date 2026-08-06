@@ -104,10 +104,17 @@ bool ShipyardPanel::HasItem(const string &name) const
 
 
 
-void ShipyardPanel::DrawItem(const string &name, const Point &point)
+void ShipyardPanel::AddItemZone(const string &name, const Point &point)
 {
 	const Ship *ship = GameData::Ships().Get(name);
 	zones.emplace_back(point, Point(SHIP_SIZE, SHIP_SIZE), ship);
+}
+
+
+
+void ShipyardPanel::DrawItem(const string &name, const Point &point)
+{
+	const Ship *ship = GameData::Ships().Get(name);
 	if(point.Y() + SHIP_SIZE / 2 < Screen::Top() || point.Y() - SHIP_SIZE / 2 > Screen::Bottom())
 		return;
 

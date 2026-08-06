@@ -239,10 +239,17 @@ bool OutfitterPanel::HasItem(const string &name) const
 
 
 
-void OutfitterPanel::DrawItem(const string &name, const Point &point)
+void OutfitterPanel::AddItemZone(const string &name, const Point &point)
 {
 	const Outfit *outfit = GameData::Outfits().Get(name);
 	zones.emplace_back(point, Point(OUTFIT_SIZE, OUTFIT_SIZE), outfit);
+}
+
+
+
+void OutfitterPanel::DrawItem(const string &name, const Point &point)
+{
+	const Outfit *outfit = GameData::Outfits().Get(name);
 	if(point.Y() + OUTFIT_SIZE / 2 < Screen::Top() || point.Y() - OUTFIT_SIZE / 2 > Screen::Bottom())
 		return;
 

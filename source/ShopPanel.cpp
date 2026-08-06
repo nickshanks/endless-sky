@@ -863,6 +863,8 @@ void ShopPanel::DrawShipsSidebar()
 	// Check whether flight check tooltips should be shown.
 	const auto flightChecks = player.FlightCheck();
 	Point mouse = UI::GetMouse();
+	const double visibleTop = Screen::Top();
+	const double visibleBottom = Screen::Bottom() - ButtonPanelHeight();
 	warningType.clear();
 	shipName.clear();
 	shipZones.clear();
@@ -896,7 +898,9 @@ void ShopPanel::DrawShipsSidebar()
 
 	static const Color selected{.8f, 1.f};
 	static const Color unselected{.4f, 1.f};
-	for(auto shipStack : shipStacks)
+	static Point clickTile{ICON_TILE, ICON_TILE};
+	const double halfTile = .5 * ICON_TILE;
+	for(const auto &shipStack : shipStacks)
 	{
 		auto ship = shipStack[0];
 
@@ -908,6 +912,14 @@ void ShopPanel::DrawShipsSidebar()
 		{
 			point.X() -= ICON_TILE * ICON_COLS;
 			point.Y() += ICON_TILE;
+		}
+
+		shipZones.emplace_back(point, clickTile, shipStack);
+		const bool isVisible = (point.Y() + halfTile >= visibleTop && point.Y() - halfTile <= visibleBottom);
+		if(!isVisible)
+		{
+			point.X() += ICON_TILE;
+			continue;
 		}
 
 		static Point stackAdjust{5., 5.};
@@ -947,10 +959,7 @@ void ShopPanel::DrawShipsSidebar()
 			}
 		}
 
-		static Point clickTile{ICON_TILE, ICON_TILE};
-		shipZones.emplace_back(point, clickTile, shipStack);
-
-		if(mouse.Y() < Screen::Bottom() - ButtonPanelHeight() && shipZones.back().Contains(mouse))
+		if(mouse.Y() < visibleBottom && shipZones.back().Contains(mouse))
 		{
 			shipName = !isMultiShipStack
 				? ship->GivenName() + "\n" + ship->DisplayModelName() + (ship->IsParked() ? "\n" +
@@ -1083,6 +1092,9 @@ void ShopPanel::DrawMain()
 		return;
 	const int columns = mainWidth / TILE_SIZE;
 	const int columnWidth = mainWidth / columns;
+	const double halfTile = .5 * TILE_SIZE;
+	const double visibleTop = Screen::Top();
+	const double visibleBottom = Screen::Bottom();
 
 	const Point begin(
 		(Screen::Width() - columnWidth) / -2,
@@ -1117,7 +1129,9 @@ void ShopPanel::DrawMain()
 			if(isCollapsed)
 				break;
 
-			DrawItem(name, point);
+			AddItemZone(name, point);
+			if(point.Y() + halfTile >= visibleTop && point.Y() - halfTile <= visibleBottom)
+				DrawItem(name, point);
 
 			point.X() += columnWidth;
 			if(point.X() >= endX)
