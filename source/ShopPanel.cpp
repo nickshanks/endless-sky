@@ -51,6 +51,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <SDL2/SDL.h>
 
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -73,6 +74,89 @@ namespace {
 			return false;
 		scrollbar.SyncInto(scroll, animate ? 5 : 0);
 		return true;
+	};
+
+	// Converts centered Screen coordinates into framebuffer scissor coordinates,
+	// using the active viewport so this works correctly with zoom / HiDPI scaling.
+	bool ToScissorBox(int left, int top, int right, int bottom,
+		GLint &outX, GLint &outY, GLsizei &outWidth, GLsizei &outHeight)
+	{
+		GLint viewport[4] = {0, 0, 0, 0};
+		glGetIntegerv(GL_VIEWPORT, viewport);
+		if(viewport[2] <= 0 || viewport[3] <= 0)
+			return false;
+
+		const double screenWidth = Screen::Width();
+		const double screenHeight = Screen::Height();
+		if(screenWidth <= 0. || screenHeight <= 0.)
+			return false;
+
+		const double scaleX = static_cast<double>(viewport[2]) / screenWidth;
+		const double scaleY = static_cast<double>(viewport[3]) / screenHeight;
+
+		double pixelLeft = viewport[0] + (left - Screen::Left()) * scaleX;
+		double pixelRight = viewport[0] + (right - Screen::Left()) * scaleX;
+		double pixelTop = viewport[1] + (Screen::Bottom() - top) * scaleY;
+		double pixelBottom = viewport[1] + (Screen::Bottom() - bottom) * scaleY;
+
+		if(pixelLeft > pixelRight)
+			swap(pixelLeft, pixelRight);
+		if(pixelBottom > pixelTop)
+			swap(pixelBottom, pixelTop);
+
+		GLint x = static_cast<GLint>(floor(pixelLeft));
+		GLint y = static_cast<GLint>(floor(pixelBottom));
+		GLint x2 = static_cast<GLint>(ceil(pixelRight));
+		GLint y2 = static_cast<GLint>(ceil(pixelTop));
+
+		x = max(x, viewport[0]);
+		y = max(y, viewport[1]);
+		x2 = min(x2, viewport[0] + viewport[2]);
+		y2 = min(y2, viewport[1] + viewport[3]);
+
+		if(x2 <= x || y2 <= y)
+			return false;
+
+		outX = x;
+		outY = y;
+		outWidth = x2 - x;
+		outHeight = y2 - y;
+		return true;
+	}
+
+	class ScopedScissor {
+	public:
+		ScopedScissor(int left, int top, int right, int bottom)
+		{
+			wasEnabled = glIsEnabled(GL_SCISSOR_TEST);
+			glGetIntegerv(GL_SCISSOR_BOX, previousBox);
+
+			GLint x = 0;
+			GLint y = 0;
+			GLsizei width = 0;
+			GLsizei height = 0;
+			if(ToScissorBox(left, top, right, bottom, x, y, width, height))
+			{
+				glEnable(GL_SCISSOR_TEST);
+				glScissor(x, y, width, height);
+				isActive = true;
+			}
+		}
+
+		~ScopedScissor()
+		{
+			if(!isActive)
+				return;
+
+			glScissor(previousBox[0], previousBox[1], previousBox[2], previousBox[3]);
+			if(!wasEnabled)
+				glDisable(GL_SCISSOR_TEST);
+		}
+
+	private:
+		bool isActive = false;
+		GLboolean wasEnabled = GL_FALSE;
+		GLint previousBox[4] = {0, 0, 0, 0};
 	};
 }
 
@@ -895,6 +979,12 @@ void ShopPanel::DrawShipsSidebar()
 			similarShips.push_back(it);
 			shipStacks.emplace_back(similarShips);
 		}
+
+	const int sidebarLeft = Screen::Right() - SIDEBAR_WIDTH;
+	const int sidebarTop = Screen::Top();
+	const int sidebarRight = Screen::Right();
+	const int sidebarBottom = static_cast<int>(Screen::Bottom() - ButtonPanelHeight());
+	const ScopedScissor sidebarScissor(sidebarLeft, sidebarTop, sidebarRight, sidebarBottom);
 
 	static const Color selected{.8f, 1.f};
 	static const Color unselected{.4f, 1.f};
