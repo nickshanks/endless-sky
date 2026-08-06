@@ -20,6 +20,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Sale.h"
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class Outfit;
@@ -51,6 +52,7 @@ public:
 	explicit OutfitterPanel(PlayerInfo &player, Sale<Outfit> stock);
 
 	virtual void Step() override;
+	virtual void Draw() override;
 
 
 protected:
@@ -81,10 +83,16 @@ protected:
 
 
 private:
+	struct OutfitCountRange {
+		int minCount = 0;
+		int maxCount = 0;
+	};
+
 	static bool ShipCanAdd(const Ship *ship, const Outfit *outfit);
 	static bool ShipCanRemove(const Ship *ship, const Outfit *outfit);
 	void DrawOutfit(const Outfit &outfit, const Point &center, bool isSelected, bool isOwned) const;
 	bool HasLicense(const std::string &name) const;
+	void RebuildSelectedOutfitCountCache();
 	void CheckRefill();
 	void Refill();
 	// Shared code for reducing the selected ships to those that have the
@@ -108,6 +116,10 @@ private:
 
 	// Keep track of whether the outfitter help screens have been shown.
 	bool checkedHelp = false;
+
+	// Per-draw-frame cache of selected-ship outfit count ranges.
+	std::unordered_map<const Outfit *, OutfitCountRange> selectedOutfitCountRanges;
+	bool selectedShipsSameModel = true;
 
 	int shipsHere = 0;
 };

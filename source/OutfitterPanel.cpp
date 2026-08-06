@@ -146,6 +146,62 @@ void OutfitterPanel::Step()
 
 
 
+void OutfitterPanel::Draw()
+{
+	RebuildSelectedOutfitCountCache();
+	ShopPanel::Draw();
+}
+
+
+
+void OutfitterPanel::RebuildSelectedOutfitCountCache()
+{
+	selectedOutfitCountRanges.clear();
+	selectedShipsSameModel = true;
+
+	if(playerShips.empty())
+		return;
+
+	struct OutfitAggregate {
+		int minCount = numeric_limits<int>::max();
+		int maxCount = 0;
+		int shipsWithOutfit = 0;
+	};
+
+	unordered_map<const Outfit *, OutfitAggregate> aggregates;
+	string firstModelName;
+	for(const Ship *ship : playerShips)
+	{
+		const string modelName = ship->TrueModelName();
+		if(firstModelName.empty())
+			firstModelName = modelName;
+		else
+			selectedShipsSameModel &= (modelName == firstModelName);
+
+		for(const auto &[installedOutfit, count] : ship->Outfits())
+		{
+			if(count <= 0)
+				continue;
+
+			auto &aggregate = aggregates[installedOutfit];
+			aggregate.minCount = min(aggregate.minCount, count);
+			aggregate.maxCount = max(aggregate.maxCount, count);
+			++aggregate.shipsWithOutfit;
+		}
+	}
+
+	const int selectedShipCount = static_cast<int>(playerShips.size());
+	for(const auto &[outfit, aggregate] : aggregates)
+	{
+		OutfitCountRange range;
+		range.minCount = (aggregate.shipsWithOutfit < selectedShipCount) ? 0 : aggregate.minCount;
+		range.maxCount = aggregate.maxCount;
+		selectedOutfitCountRanges.emplace(outfit, range);
+	}
+}
+
+
+
 int OutfitterPanel::TileSize() const
 {
 	return OUTFIT_SIZE;
@@ -172,10 +228,8 @@ bool OutfitterPanel::HasItem(const string &name) const
 	if(showStorage && player.Storage().Get(outfit))
 		return true;
 
-	if(showInstalled)
-		for(const Ship *ship : playerShips)
-			if(ship->OutfitCount(outfit))
-				return true;
+	if(showInstalled && selectedOutfitCountRanges.contains(outfit))
+		return true;
 
 	if(showForSale && HasLicense(name))
 		return true;
@@ -218,20 +272,15 @@ void OutfitterPanel::DrawItem(const string &name, const Point &point)
 		}
 		else
 		{
-			highlightDifferences = true;
-			string firstModelName;
-			for(const Ship *ship : playerShips)
+			highlightDifferences = selectedShipsSameModel;
+			const auto countRangeIt = selectedOutfitCountRanges.find(outfit);
+			if(countRangeIt != selectedOutfitCountRanges.end())
 			{
-				// Highlight differences in installed outfit counts only when all selected ships are of the same model.
-				string modelName = ship->TrueModelName();
-				if(firstModelName.empty())
-					firstModelName = modelName;
-				else
-					highlightDifferences &= (modelName == firstModelName);
-				int count = ship->OutfitCount(outfit);
-				minCount = min(minCount, count);
-				maxCount = max(maxCount, count);
+				minCount = countRangeIt->second.minCount;
+				maxCount = countRangeIt->second.maxCount;
 			}
+			else
+				minCount = 0;
 		}
 
 		if(maxCount)
