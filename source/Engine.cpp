@@ -1781,6 +1781,10 @@ void Engine::CalculateStep()
 // Calculate things that require the engine not to be paused.
 void Engine::CalculateUnpaused(const Ship *flagship, const System *playerSystem)
 {
+	hasAntiMissile.clear();
+	hasTractorBeam.clear();
+	maxAntiMissileRange = 0.;
+
 	// Now, all the ships must decide what they are doing next.
 	ai.Step(activeCommands);
 
@@ -2036,7 +2040,10 @@ void Engine::MoveShip(const shared_ptr<Ship> &ship)
 	// Anti-missile and tractor beam systems are fired separately from normal weaponry.
 	// Track which ships have at least one such system ready to fire.
 	if(ship->HasAntiMissile())
+	{
 		hasAntiMissile.push_back(ship.get());
+		maxAntiMissileRange = max(maxAntiMissileRange, ship->AntiMissileRange());
+	}
 	if(ship->HasTractorBeam())
 		hasTractorBeam.push_back(ship.get());
 }
@@ -2596,15 +2603,22 @@ void Engine::DoCollisions(Projectile &projectile)
 	}
 
 	// If the projectile is still alive, give the anti-missile systems a chance to shoot it down.
-	if(!projectile.IsDead() && projectile.MissileStrength())
+	if(!projectile.IsDead() && projectile.MissileStrength() && maxAntiMissileRange > 0.)
 	{
-		for(Ship *ship : hasAntiMissile)
+		bodyScratch.clear();
+		shipCollisions.Circle(projectile.Position(), maxAntiMissileRange, bodyScratch);
+		for(Body *body : bodyScratch)
+		{
+			Ship *ship = static_cast<Ship *>(body);
+			if(!ship->HasAntiMissile())
+				continue;
 			if(ship == projectile.Target() || !gov || gov->IsEnemy(ship->GetGovernment()))
 				if(ship->FireAntiMissile(projectile, visuals))
 				{
 					projectile.Kill();
 					break;
 				}
+		}
 	}
 }
 
