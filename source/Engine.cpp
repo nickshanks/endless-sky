@@ -1768,11 +1768,29 @@ void Engine::CalculateStep()
 				Audio::Play(it.first, SoundCategory::ENGINE);
 		}
 	}
+
+	auto IsOutsideView = [zoom, &newCamera](const Body &body, bool includeVelocity)
+	{
+		if(!body.HasSprite() || !body.Zoom())
+			return true;
+
+		Point p = (body.Position() - newCamera.Center()) * zoom;
+		if(includeVelocity)
+			p += (.5 * body.Velocity()) * zoom;
+
+		double radius = body.Radius() * zoom + 2.;
+		return p.X() + radius < Screen::Left()
+			|| p.X() - radius > Screen::Right()
+			|| p.Y() + radius < Screen::Top()
+			|| p.Y() - radius > Screen::Bottom();
+	};
 	// Draw the projectiles.
 	for(const Projectile &projectile : projectiles)
+		if(!IsOutsideView(projectile, true))
 		batchDraw[currentCalcBuffer].Add(projectile, projectile.Clip());
 	// Draw the visuals.
 	for(const Visual &visual : visuals)
+		if(!IsOutsideView(visual, false))
 		batchDraw[currentCalcBuffer].AddVisual(visual);
 }
 
