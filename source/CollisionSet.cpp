@@ -56,6 +56,20 @@ namespace {
 			seenEpoch = 1;
 		}
 	}
+
+	inline bool SegmentWithinRadius(const Point &from, const Point &to,
+		const Point &center, double radius)
+	{
+		Point segment = to - from;
+		Point toCenter = center - from;
+		double segmentLengthSquared = segment.Dot(segment);
+		double projection = 0.;
+		if(segmentLengthSquared > 0.)
+			projection = max(0., min(1., toCenter.Dot(segment) / segmentLengthSquared));
+
+		Point closest = from + projection * segment;
+		return center.DistanceSquared(closest) <= radius * radius;
+	}
 }
 
 
@@ -202,6 +216,9 @@ void CollisionSet::Line(const Point &from, const Point &to, vector<Collision> &l
 			if(it->body != target && iGov && pGov && !iGov->IsEnemy(pGov))
 				continue;
 
+			if(!SegmentWithinRadius(from, to, it->body->Position(), it->body->Radius()))
+				continue;
+
 			const Mask &mask = it->body->GetMask(step);
 			Point offset = from - it->body->Position();
 			const double range = mask.Collide(offset, to - from, it->body->Facing());
@@ -273,6 +290,9 @@ void CollisionSet::Line(const Point &from, const Point &to, vector<Collision> &l
 			// projectile or the object has no government, it will always hit.
 			const Government *iGov = it->body->GetGovernment();
 			if(it->body != target && iGov && pGov && !iGov->IsEnemy(pGov))
+				continue;
+
+			if(!SegmentWithinRadius(from, to, it->body->Position(), it->body->Radius()))
 				continue;
 
 			const Mask &mask = it->body->GetMask(step);
