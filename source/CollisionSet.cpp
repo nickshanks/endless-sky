@@ -25,6 +25,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Ship.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <numeric>
 #include <set>
@@ -40,7 +41,21 @@ namespace {
 	// Warn the user only once about too-large projectile velocities.
 	bool warned = false;
 
-	thread_local vector<bool> seen;
+	thread_local vector<uint32_t> seenStamp;
+	thread_local uint32_t seenEpoch = 1;
+
+	inline void BeginSeen(size_t size)
+	{
+		if(seenStamp.size() < size)
+			seenStamp.resize(size, 0);
+
+		++seenEpoch;
+		if(!seenEpoch)
+		{
+			fill(seenStamp.begin(), seenStamp.end(), 0);
+			seenEpoch = 1;
+		}
+	}
 }
 
 
@@ -235,8 +250,7 @@ void CollisionSet::Line(const Point &from, const Point &to, vector<Collision> &l
 	if(stepY > 0)
 		ry = fullScale - ry;
 
-	seen.clear();
-	seen.resize(all.size());
+	BeginSeen(all.size());
 
 	while(true)
 	{
@@ -251,9 +265,9 @@ void CollisionSet::Line(const Point &from, const Point &to, vector<Collision> &l
 			if(it->x != gx || it->y != gy)
 				continue;
 
-			if(seen[it->seenIndex])
+			if(seenStamp[it->seenIndex] == seenEpoch)
 				continue;
-			seen[it->seenIndex] = true;
+			seenStamp[it->seenIndex] = seenEpoch;
 
 			// Check if this projectile can hit this object. If either the
 			// projectile or the object has no government, it will always hit.
@@ -327,8 +341,7 @@ void CollisionSet::Ring(const Point &center, double inner, double outer, vector<
 	const int maxX = static_cast<int>(center.X() + outer) >> SHIFT;
 	const int maxY = static_cast<int>(center.Y() + outer) >> SHIFT;
 
-	seen.clear();
-	seen.resize(all.size());
+	BeginSeen(all.size());
 
 	for(int y = minY; y <= maxY; ++y)
 	{
@@ -347,9 +360,9 @@ void CollisionSet::Ring(const Point &center, double inner, double outer, vector<
 				if(it->x != x || it->y != y)
 					continue;
 
-				if(seen[it->seenIndex])
+					if(seenStamp[it->seenIndex] == seenEpoch)
 					continue;
-				seen[it->seenIndex] = true;
+					seenStamp[it->seenIndex] = seenEpoch;
 
 				const Mask &mask = it->body->GetMask(step);
 				Point offset = center - it->body->Position();
