@@ -152,6 +152,9 @@ private:
 	// A positive value means this projectile will turn to the right;
 	// a negative value means this projectile will turn left.
 	int confusionDirection = 0;
+	// Cached homing steering command to amortize expensive guidance calculations.
+	double cachedHomingTurn = 0.;
+	uint8_t homingGuidanceTick = 0;
 
 	// This is safe to keep even if the ships die, because we don't actually call the ship,
 	// we just compare this pointer to other ship pointers.
