@@ -265,6 +265,7 @@ public:
 	// Return true if any anti-missile or tractor beam systems are ready to fire.
 	bool HasAntiMissile() const;
 	bool HasTractorBeam() const;
+	double AntiMissileRange() const;
 	// Fire an anti-missile at the given missile. Returns true if the missile was killed.
 	bool FireAntiMissile(const Projectile &projectile, std::vector<Visual> &visuals);
 	// Fire tractor beams at the given flotsam. Returns a Point representing the net

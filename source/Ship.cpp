@@ -2208,6 +2208,13 @@ bool Ship::HasTractorBeam() const
 
 
 
+double Ship::AntiMissileRange() const
+{
+	return antiMissileRange;
+}
+
+
+
 // Fire an anti-missile.
 bool Ship::FireAntiMissile(const Projectile &projectile, vector<Visual> &visuals)
 {

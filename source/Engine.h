@@ -234,6 +234,7 @@ private:
 	// tractor beams ready to fire.
 	std::vector<Ship *> hasAntiMissile;
 	std::vector<Ship *> hasTractorBeam;
+	double maxAntiMissileRange = 0.;
 	// Reused temporary buffers for hot collision and radius-query paths.
 	std::vector<Collision> collisionScratch;
 	std::vector<Body *> bodyScratch;
