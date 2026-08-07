@@ -2510,7 +2510,8 @@ void Engine::DoCollisions(Projectile &projectile)
 	}
 
 	// Sort the Collisions by increasing range so that the closer collisions are evaluated first.
-	sort(collisions.begin(), collisions.end());
+	if(collisions.size() > 1)
+		sort(collisions.begin(), collisions.end());
 
 	// Run all collisions until either the projectile dies or there are no more collisions left.
 	for(Collision &collision : collisions)
