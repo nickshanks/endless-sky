@@ -49,6 +49,7 @@ class Government;
 class NPC;
 class Outfit;
 class PlayerInfo;
+class Body;
 class Ship;
 class ShipEvent;
 class Sprite;
@@ -233,6 +234,9 @@ private:
 	// tractor beams ready to fire.
 	std::vector<Ship *> hasAntiMissile;
 	std::vector<Ship *> hasTractorBeam;
+	// Reused temporary buffers for hot collision and radius-query paths.
+	std::vector<Collision> collisionScratch;
+	std::vector<Body *> bodyScratch;
 
 	AI ai;
 
