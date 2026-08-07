@@ -2464,9 +2464,41 @@ void Engine::DoCollisions(Projectile &projectile)
 	const Government *gov = projectile.GetGovernment();
 	const Weapon &weapon = projectile.GetWeapon();
 
+	auto TryAntiMissileInterception = [&]()
+	{
+		if(!projectile.IsDead() && projectile.MissileStrength() && maxAntiMissileRange > 0.)
+		{
+			bodyScratch.clear();
+			shipCollisions.Circle(projectile.Position(), maxAntiMissileRange, bodyScratch);
+			for(Body *body : bodyScratch)
+			{
+				Ship *ship = static_cast<Ship *>(body);
+				if(!ship->HasAntiMissile())
+					continue;
+				if(ship == projectile.Target() || !gov || gov->IsEnemy(ship->GetGovernment()))
+					if(ship->FireAntiMissile(projectile, visuals))
+					{
+						projectile.Kill();
+						break;
+					}
+			}
+		}
+	};
+
+	const bool hasPhasingTargetPath = (weapon.IsPhasing() && projectile.Target());
+	const double triggerRadius = weapon.TriggerRadius();
+	const bool hasTriggerRadius = (triggerRadius > 0.);
+	const bool canDoPathCollision =
+		weapon.CanCollideShips() || weapon.CanCollideAsteroids() || weapon.CanCollideMinables();
+	if(!projectile.ShouldExplode() && !hasPhasingTargetPath && !hasTriggerRadius && !canDoPathCollision)
+	{
+		TryAntiMissileInterception();
+		return;
+	}
+
 	if(projectile.ShouldExplode())
 		collisions.emplace_back(nullptr, CollisionType::EXPLOSION, 0.);
-	else if(weapon.IsPhasing() && projectile.Target())
+	else if(hasPhasingTargetPath)
 	{
 		// "Phasing" projectiles that have a target will never hit any other ship.
 		// They also don't care whether the weapon has "no ship collisions" on, as
@@ -2484,8 +2516,7 @@ void Engine::DoCollisions(Projectile &projectile)
 	else
 	{
 		// For weapons with a trigger radius, check if any detectable object will set it off.
-		double triggerRadius = weapon.TriggerRadius();
-		if(triggerRadius)
+		if(hasTriggerRadius)
 		{
 			vector<Body *> &inRadius = bodyScratch;
 			inRadius.clear();
@@ -2603,23 +2634,7 @@ void Engine::DoCollisions(Projectile &projectile)
 	}
 
 	// If the projectile is still alive, give the anti-missile systems a chance to shoot it down.
-	if(!projectile.IsDead() && projectile.MissileStrength() && maxAntiMissileRange > 0.)
-	{
-		bodyScratch.clear();
-		shipCollisions.Circle(projectile.Position(), maxAntiMissileRange, bodyScratch);
-		for(Body *body : bodyScratch)
-		{
-			Ship *ship = static_cast<Ship *>(body);
-			if(!ship->HasAntiMissile())
-				continue;
-			if(ship == projectile.Target() || !gov || gov->IsEnemy(ship->GetGovernment()))
-				if(ship->FireAntiMissile(projectile, visuals))
-				{
-					projectile.Kill();
-					break;
-				}
-		}
-	}
+	TryAntiMissileInterception();
 }
 
 
