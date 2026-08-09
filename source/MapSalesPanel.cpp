@@ -480,3 +480,20 @@ void MapSalesPanel::ClickCategory(const string &name)
 	else
 		collapsed.insert(name);
 }
+
+
+
+void MapSalesPanel::SetSelectedItem(int index, bool shouldScroll)
+{
+	Compare(compare = -1);
+	Select(selected = index);
+	if(shouldScroll)
+		ScrollTo(index);
+}
+
+
+
+void MapSalesPanel::ExpandCategory(const string &name)
+{
+	collapsed.erase(name);
+}
