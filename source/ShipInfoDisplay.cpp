@@ -396,16 +396,16 @@ void ShipInfoDisplay::UpdateAttributes(const Ship &ship, const PlayerInfo &playe
 		+ attributes.Get("delayed hull heat"))
 		* (1. + attributes.Get("hull heat multiplier")) : 0.;
 	heatTable.push_back(Format::Number(60. * (shieldHeat + hullHeat)));
+	const double overallEnergy = idleEnergyPerFrame
+		- movingEnergyPerFrame
+		- firingEnergy
+		- shieldEnergy
+		- hullEnergy;
 
 	if(scrollingPanel)
 	{
 		// Add up the maximum possible changes and add the total to the table.
 		attributesHeight += 20;
-		const double overallEnergy = idleEnergyPerFrame
-			- movingEnergyPerFrame
-			- firingEnergy
-			- shieldEnergy
-			- hullEnergy;
 		const double overallHeat = idleHeatPerFrame
 			+ movingHeatPerFrame
 			+ firingHeat
@@ -423,6 +423,22 @@ void ShipInfoDisplay::UpdateAttributes(const Ship &ship, const PlayerInfo &playe
 	tableLabels.push_back("capacity:");
 	energyTable.push_back(Format::Number(maxEnergy));
 	heatTable.push_back(Format::Number(maxHeat));
+
+	if(scrollingPanel)
+	{
+		// Add durations for energy use.
+		attributesHeight += 20;
+		const double framesAtMax = (overallEnergy < 0.) ? maxEnergy / -overallEnergy : 0.;
+		const double framesToRecharge = (idleEnergyPerFrame > 0.) ? maxEnergy / idleEnergyPerFrame : 0.;
+		tableLabels.push_back("time at max:");
+		energyTable.push_back(overallEnergy < 0. ? Format::Number(framesAtMax / 60.) : "infinite"); // "∞");
+		heatTable.push_back("");
+
+		tableLabels.push_back("time to recharge:");
+		energyTable.push_back(Format::Number(framesToRecharge / 60.));
+		heatTable.push_back("");
+	}
+
 	// Pad by 10 pixels on the top and bottom.
 	attributesHeight += 30;
 }
