@@ -23,21 +23,21 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 class DataNode;
 class DataWriter;
-class Government;
-class Mask;
 class Sprite;
 
 
 
-// Class representing any object in the game that usually also has a sprite.
+// Class representing any object in the game that usually also has a sprite
+// that can be animated.
 class Drawable {
 public:
 	// Constructors.
 	Drawable() = default;
-	Drawable(const Sprite *sprite, double zoom = 1., Point scale = Point(1., 1.), double alpha = 1.);
-	Drawable(const Drawable &sprite, double zoom = 1., Point scale = Point(1., 1.), double alpha = 1.);
+	explicit Drawable(const Sprite *sprite, double zoom = 1., Point scale = Point(1., 1.), double alpha = 1.);
+	Drawable(const Drawable &other, double zoom, Point scale, double alpha);
 
-	// Check that this Drawable has a sprite and that the sprite has at least one frame.
+	// Check that this Drawable has a sprite and that the sprite has dimensions to it.
+	// The sprite may be unloaded, though.
 	bool HasSprite() const;
 	// Access the underlying Sprite object.
 	const Sprite *GetSprite() const;
@@ -49,16 +49,12 @@ public:
 	// Which color swizzle should be applied to the sprite?
 	const Swizzle *GetSwizzle() const;
 	bool InheritsParentSwizzle() const;
-	// Get the sprite frame and mask for the given time step.
+	// Get the sprite frame for the given time step.
 	float GetFrame(int step = -1) const;
-	const Mask &GetMask(int step = -1) const;
 
 	// Positional attributes.
 	double Zoom() const;
 	Point Scale() const;
-
-	// Check if this object is marked for removal from the game.
-	bool ShouldBeRemoved() const;
 
 	// Sprite serialization.
 	void LoadSprite(const DataNode &node);
@@ -68,44 +64,35 @@ public:
 	// Set the color swizzle.
 	void SetSwizzle(const Swizzle *swizzle);
 
+	double Alpha() const;
+
 
 protected:
 	// Adjust the frame rate.
 	void SetFrameRate(float framesPerSecond);
 	void AddFrameRate(float framesPerSecond);
 	void PauseAnimation();
-	// Mark this object to be removed from the game.
-	void MarkForRemoval();
-	// Mark that this object should not be removed (e.g. a launched fighter).
-	void UnmarkForRemoval();
+	// Set what animation step we're on. This affects future calls to Body::GetMask()
+	// and Drawable::GetFrame().
+	void SetStep(int step) const;
 
 
 protected:
-	// Basic positional attributes.
+	// Animation parameters.
+	const Sprite *sprite = nullptr;
+	mutable float frame = 0.f;
+
+	// The point that is considered to be the center of the sprite.
 	Point center;
 	// A zoom of 1 means the sprite should be drawn at half size. For objects
 	// whose sprites should be full size, use zoom = 2.
 	float zoom = 1.f;
-	Point scale = Point(1., 1.);
+	Point scale = Point{1., 1.};
 
 	double alpha = 1.;
-	// The maximum distance at which the body is visible, and at which it becomes invisible again.
-	double distanceVisible = 0.;
-	double distanceInvisible = 0.;
-
-	// Government, for use in collision checks.
-	const Government *government = nullptr;
 
 
 private:
-	// Set what animation step we're on. This affects future calls to GetMask()
-	// and GetFrame().
-	void SetStep(int step) const;
-
-
-private:
-	// Animation parameters.
-	const Sprite *sprite = nullptr;
 	// Allow objects based on this one to adjust their frame rate and swizzle.
 	const Swizzle *swizzle = Swizzle::None();
 	bool inheritsParentSwizzle = false;
@@ -120,11 +107,7 @@ private:
 	bool rewind = false;
 	int pause = 0;
 
-	// Record when this object is marked for removal from the game.
-	bool shouldBeRemoved = false;
-
 	// Cache the frame calculation so it doesn't have to be repeated if given
 	// the same step over and over again.
 	mutable int currentStep = -1;
-	mutable float frame = 0.f;
 };

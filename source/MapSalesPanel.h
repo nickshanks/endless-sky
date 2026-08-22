@@ -18,12 +18,14 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "MapPanel.h"
 
 #include "ClickZone.h"
+#include "LoadingCircle.h"
 
 #include <set>
 #include <string>
 #include <vector>
 
 class CategoryList;
+class Information;
 class ItemInfoDisplay;
 class PlayerInfo;
 class Point;
@@ -38,10 +40,13 @@ public:
 	MapSalesPanel(PlayerInfo &player, bool isOutfitters);
 	MapSalesPanel(const MapPanel &panel, bool isOutfitters);
 
+	virtual void Step() override;
 	virtual void Draw() override;
 
 
 protected:
+	virtual void LoadCatalogThumbnails() const = 0;
+
 	virtual bool KeyDown(SDL_Keycode key, Uint16 mod, const Command &command, bool isNewPress) override;
 	virtual bool Click(int x, int y, MouseButton button, int clicks) override;
 	virtual bool Hover(int x, int y) override;
@@ -54,7 +59,6 @@ protected:
 	virtual const Swizzle *CompareSpriteSwizzle() const;
 	virtual const ItemInfoDisplay &SelectedInfo() const = 0;
 	virtual const ItemInfoDisplay &CompareInfo() const = 0;
-	virtual const std::string &KeyLabel(int index) const = 0;
 
 	virtual void Select(int index) = 0;
 	virtual void Compare(int index) = 0;
@@ -65,7 +69,7 @@ protected:
 	virtual void DrawSelectedSprite(const Point &corner) const;
 	virtual void DrawCompareSprite(const Point &corner) const;
 
-	void DrawKey() const;
+	virtual void DrawKey(Information &info) const;
 	void DrawPanel() const;
 	void DrawInfo() const;
 
@@ -94,6 +98,8 @@ protected:
 	const CategoryList &categories;
 	bool onlyShowSoldHere = false;
 	bool onlyShowStorageHere = false;
+	// Whether this panel has preloaded the thumbnails from the catalog yet.
+	bool hasLoadedThumbnails = false;
 
 
 private:
@@ -106,4 +112,6 @@ private:
 	std::vector<ClickZone<int>> zones;
 	int selected = -1;
 	int compare = -1;
+
+	LoadingCircle loadingCircle;
 };

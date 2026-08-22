@@ -15,15 +15,11 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "Body.h"
 
-#include "DataNode.h"
-#include "DataWriter.h"
 #include "GameData.h"
 #include "image/Mask.h"
 #include "image/MaskManager.h"
 #include "pi.h"
-#include "Random.h"
 #include "image/Sprite.h"
-#include "image/SpriteSet.h"
 
 #include <algorithm>
 #include <cmath>
@@ -41,12 +37,32 @@ Body::Body(const Sprite *sprite, Point position, Point velocity, Angle facing, d
 
 
 // Constructor, based on the animation from another Body object.
-Body::Body(const Body &sprite, Point position, Point velocity, Angle facing, double zoom, Point scale, double alpha)
-	: Drawable(sprite, zoom, scale, alpha)
+Body::Body(const Body &other, Point position, Point velocity, Angle facing, double zoom, Point scale, double alpha)
+	: Drawable(other, zoom, scale, alpha)
 {
 	this->position = position;
 	this->velocity = velocity;
 	this->angle = facing;
+}
+
+
+
+// Get the mask for the given time step. If no time step is given, this will
+// return the mask from the most recently given step.
+const Mask &Body::GetMask(int step) const
+{
+	if(step >= 0)
+		SetStep(step);
+
+	static const Mask EMPTY;
+	int current = round(frame);
+	if(!sprite || current < 0)
+		return EMPTY;
+
+	const vector<Mask> &masks = GameData::GetMaskManager().GetMasks(sprite, Scale());
+
+	// Assume that if a masks array exists, it has the right number of frames.
+	return masks.empty() ? EMPTY : masks[current % masks.size()];
 }
 
 
@@ -67,7 +83,7 @@ const Point &Body::Velocity() const
 
 
 
-const Point Body::Center() const
+Point Body::Center() const
 {
 	return -rotatedCenter + position;
 }
@@ -87,6 +103,14 @@ const Angle &Body::Facing() const
 Point Body::Unit() const
 {
 	return angle.Unit() * (.5 * Zoom());
+}
+
+
+
+// Check if this object is marked for removal from the game.
+bool Body::ShouldBeRemoved() const
+{
+	return shouldBeRemoved;
 }
 
 
@@ -120,6 +144,22 @@ double Body::DistanceAlpha(const Point &drawCenter) const
 bool Body::IsVisible(const Point &drawCenter) const
 {
 	return DistanceAlpha(drawCenter) > 0.;
+}
+
+
+
+// Mark this object to be removed from the game.
+void Body::MarkForRemoval()
+{
+	shouldBeRemoved = true;
+}
+
+
+
+// Mark this object to not be removed from the game.
+void Body::UnmarkForRemoval()
+{
+	shouldBeRemoved = false;
 }
 
 
