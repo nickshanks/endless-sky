@@ -224,7 +224,8 @@ outfit "Jump Drive"
 	series "Drives"
 	index 30
 	cost 1000000
-	thumbnail "outfit/jump drive"
+	"thumbnail sprite" "outfit/jump drive"
+		"frame rate" 10
 	"mass" 20
 	"outfit space" -20
 	"jump speed" .3

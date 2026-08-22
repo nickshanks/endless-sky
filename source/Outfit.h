@@ -15,6 +15,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "Body.h"
 #include "Dictionary.h"
 #include "Paragraphs.h"
 
@@ -25,7 +26,6 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <utility>
 #include <vector>
 
-class Body;
 class ConditionsStore;
 class DataNode;
 class Effect;
@@ -104,6 +104,7 @@ public:
 	const std::vector<std::string> &Licenses() const;
 	// Get the image to display in the outfitter when buying this item.
 	const Sprite *Thumbnail() const;
+	const Drawable &AnimatedThumbnail() const;
 
 	// Return true if this Outfit's attributes Dictionary is empty. Does not determine
 	// whether this Outfit contains any sprites, effects, sounds, or a weapon.
@@ -182,6 +183,7 @@ private:
 	int index = 0;
 	Paragraphs description;
 	const Sprite *thumbnail = nullptr;
+	Drawable animatedThumbnail;
 	int64_t cost = 0;
 	double mass = 0.;
 	// Licenses needed to purchase this item.

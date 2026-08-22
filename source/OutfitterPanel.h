@@ -123,4 +123,5 @@ private:
 	bool selectedShipsSameModel = true;
 
 	int shipsHere = 0;
+	int step = 0;
 };
