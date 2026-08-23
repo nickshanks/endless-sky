@@ -915,7 +915,6 @@ event "wanderers: the eye begins to open"
 		add object
 			sprite planet/wisp
 			distance 2331.95
-			period 2518.05
 
 event "wanderers: the eye opens"
 	unvisit Sabriset
@@ -926,7 +925,6 @@ event "wanderers: the eye opens"
 		add object "The Eye"
 			sprite planet/wormhole
 			distance 2022.87
-			period 918.463
 	system Sepriaptu
 		add fleet "Wanderer Defense" 1600
 		add fleet "Wanderer Drones" 800
@@ -957,11 +955,9 @@ event "wanderers: the eye opens"
 		remove object
 			sprite planet/wisp
 			distance 2331.95
-			period 2518.05
 		add object "The Eye"
 			sprite planet/wormhole
 			distance 2331.95
-			period 2518.05
 	system Kaliptari
 		government "Wanderer"
 
