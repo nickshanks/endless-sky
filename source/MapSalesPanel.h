@@ -82,6 +82,8 @@ protected:
 	void DoFind(const std::string &text);
 	void ScrollTo(int index);
 	void ClickCategory(const std::string &name);
+	void SetSelectedItem(int index, bool shouldScroll = true);
+	void ExpandCategory(const std::string &name);
 
 
 protected:

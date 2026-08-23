@@ -42,8 +42,9 @@ using namespace std;
 
 
 
-MapOutfitterPanel::MapOutfitterPanel(PlayerInfo &player)
-	: MapSalesPanel(player, true)
+MapOutfitterPanel::MapOutfitterPanel(PlayerInfo &player, const Outfit *initialSelection)
+	: MapSalesPanel(player, true),
+	initialSelection(initialSelection)
 {
 	Init();
 }
@@ -234,6 +235,7 @@ void MapOutfitterPanel::DrawItems()
 	if(GetUI().IsTop(this) && player.GetPlanet() && player.GetDate() >= player.StartData().GetDate() + 12)
 		DoHelp("map advanced shops");
 	list.clear();
+	int initialSelectionIndex = -1;
 	Point corner = Screen::TopLeft() + Point(0, scroll);
 	for(const auto &cat : categories)
 	{
@@ -314,8 +316,16 @@ void MapOutfitterPanel::DrawItems()
 			int frame = outfit->AnimatedThumbnail().GetFrame(step);
 			Draw(corner, sprite, Swizzle::None(), frame, isForSale, outfit == selected,
 				outfit->DisplayName(), "", price, info, storage_details);
+			if(!hasAppliedInitialSelection && initialSelection && outfit == initialSelection)
+				initialSelectionIndex = static_cast<int>(list.size());
 			list.push_back(outfit);
 		}
+	}
+	if(!hasAppliedInitialSelection)
+	{
+		hasAppliedInitialSelection = true;
+		if(initialSelectionIndex >= 0)
+			SetSelectedItem(initialSelectionIndex);
 	}
 	maxScroll = corner.Y() - scroll - .5 * Screen::Height();
 }
@@ -358,4 +368,7 @@ void MapOutfitterPanel::Init()
 	// Sort the vectors.
 	for(auto &it : catalog)
 		sort(it.second.begin(), it.second.end(), BySeriesAndIndex<Outfit>());
+
+	if(initialSelection)
+		ExpandCategory(initialSelection->Category());
 }

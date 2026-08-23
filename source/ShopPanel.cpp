@@ -471,7 +471,7 @@ bool ShopPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &command, boo
 	else if(command.Has(Command::MAP))
 	{
 		if(isOutfitter)
-			GetUI().Push(new MapOutfitterPanel(player));
+			GetUI().Push(new MapOutfitterPanel(player, selectedOutfit));
 		else
 			GetUI().Push(new MapShipyardPanel(player));
 	}

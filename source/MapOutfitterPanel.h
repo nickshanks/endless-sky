@@ -32,7 +32,7 @@ class Sprite;
 // to see which systems it is available in.
 class MapOutfitterPanel : public MapSalesPanel {
 public:
-	explicit MapOutfitterPanel(PlayerInfo &player);
+	explicit MapOutfitterPanel(PlayerInfo &player, const Outfit *initialSelection = nullptr);
 	explicit MapOutfitterPanel(const MapPanel &panel, bool onlyHere = false);
 
 
@@ -62,6 +62,8 @@ private:
 private:
 	// Flat list of all outfits shown.
 	std::vector<const Outfit *> list;
+	const Outfit *initialSelection = nullptr;
+	bool hasAppliedInitialSelection = false;
 
 	const Outfit *selected = nullptr;
 	const Outfit *compare = nullptr;
