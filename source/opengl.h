@@ -13,12 +13,11 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ES_OPENGL_H_
-#define ES_OPENGL_H_
+#pragma once
 
 // Include whichever header is used for OpenGL on this operating system.
 #ifdef __APPLE__
-#include <OpenGL/GL3.h>
+#include <OpenGL/gl3.h>
 #else
 #ifdef ES_GLES
 #include <GLES3/gl3.h>
@@ -27,13 +26,34 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #endif
 #endif
 
-// A helper class for various OpenGL platform specific calls.
-class OpenGL
-{
-public:
-	static bool HasAdaptiveVSyncSupport();
-};
-
-
-
+#if defined(__APPLE__) || defined(ES_GLES)
+#define glBindFramebufferEXT glBindFramebuffer
+#define glCheckFramebufferStatusEXT glCheckFramebufferStatus
+#define glDeleteFramebuffersEXT glDeleteFramebuffers
+#define glFramebufferTexture2DEXT glFramebufferTexture2D
+#define glGenFramebuffersEXT glGenFramebuffers
 #endif
+
+
+
+// A helper class for various OpenGL platform specific calls.
+class OpenGL {
+public:
+	enum class FeatureSupport {
+		NONE = 0,
+		EXT,
+		CORE
+	};
+
+
+public:
+#ifndef ES_GLES
+	static void DisableOpenGL3();
+#endif
+
+	static bool HasAdaptiveVSyncSupport();
+	static bool HasVaoSupport();
+	static bool HasTexture2DArraySupport();
+	static bool HasClearBufferSupport();
+	static FeatureSupport GetFboSupport();
+};

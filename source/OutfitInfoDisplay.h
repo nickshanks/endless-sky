@@ -13,17 +13,16 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef OUTFIT_INFO_DISPLAY_H_
-#define OUTFIT_INFO_DISPLAY_H_
+#pragma once
 
 #include "ItemInfoDisplay.h"
 
 #include <string>
 #include <vector>
 
+class Outfit;
 class PlayerInfo;
 class Point;
-class Outfit;
 
 
 
@@ -31,6 +30,11 @@ class Outfit;
 // shows the outfit's description, one shows the required space and cost to
 // install it, and one shows other attributes of the outfit.
 class OutfitInfoDisplay : public ItemInfoDisplay {
+public:
+	// Given an attribute name and value, return the string that should be used to display that attribute.
+	static std::string FormatAttribute(const std::string &attribute, double value);
+
+
 public:
 	OutfitInfoDisplay() = default;
 	OutfitInfoDisplay(const Outfit &outfit, const PlayerInfo &player,
@@ -63,7 +67,3 @@ private:
 	std::vector<std::string> requirementValues;
 	int requirementsHeight = 0;
 };
-
-
-
-#endif

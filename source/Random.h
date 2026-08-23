@@ -13,8 +13,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RANDOM_H_
-#define RANDOM_H_
+#pragma once
 
 #include <cstdint>
 
@@ -28,6 +27,8 @@ public:
 	// Seed the generator (e.g. to make it produce exactly the same random
 	// numbers it produced previously).
 	static void Seed(uint64_t seed);
+	// After this method runs, Seed will discard its argument and reseed the prng with the value given here.
+	static void SetFixedSeed(uint64_t seed);
 
 	static uint32_t Int();
 	static uint32_t Int(uint32_t modulus);
@@ -45,7 +46,3 @@ public:
 	// Get a number from a normal distribution with standard or specified mean and stddev.
 	static double Normal(double mean = 0, double sigma = 1);
 };
-
-
-
-#endif

@@ -40,7 +40,7 @@ namespace {
 			{
 				const Planet *planet = object.GetPlanet();
 				if(planet && planet->IsValid() && planet->HasOutfitter())
-					outfits.Add(planet->Outfitter());
+					outfits.Add(planet->OutfitterStock());
 			}
 		}
 		return outfits;
@@ -48,7 +48,7 @@ namespace {
 
 	// Construct a list of varying numbers of outfits that were either specified for
 	// this fleet directly, or are sold in this system or its linked neighbors.
-	vector<const Outfit *> OutfitChoices(const set<const Sale<Outfit> *> &outfitters, const System *hub, int maxSize)
+	vector<const Outfit *> OutfitChoices(const set<const Shop<Outfit> *> &outfitters, const System *hub, int maxSize)
 	{
 		auto outfits = vector<const Outfit *>();
 		if(maxSize > 0)
@@ -63,7 +63,7 @@ namespace {
 			}
 			else
 				for(const auto outfitter : outfitters)
-					choices.Add(*outfitter);
+					choices.Add(outfitter->Stock());
 
 			if(!choices.empty())
 			{
@@ -76,10 +76,9 @@ namespace {
 						// Also avoid outfits that add space (such as Outfits / Cargo Expansions)
 						// or modify bunks.
 						// TODO: Specify rejection criteria in datafiles as ConditionSets or similar.
-						const auto &attributes = outfit->Attributes();
-						if(attributes.Get("outfit space") > 0.
-								|| attributes.Get("cargo space") > 0.
-								|| attributes.Get("bunks"))
+						if(outfit->GetPrecise("outfit space") > 0
+								|| outfit->GetPrecise("cargo space") > 0
+								|| outfit->GetPrecise("bunks"))
 							continue;
 
 						outfits.push_back(outfit);
@@ -141,17 +140,18 @@ void FleetCargo::Load(const DataNode &node)
 
 void FleetCargo::LoadSingle(const DataNode &node)
 {
+	const string &key = node.Token(0);
 	if(node.Size() < 2)
-		node.PrintTrace("Error: Expected key to have a value:");
-	else if(node.Token(0) == "cargo")
+		node.PrintTrace("Expected key to have a value:");
+	else if(key == "cargo")
 			cargo = static_cast<int>(node.Value(1));
-	else if(node.Token(0) == "commodities")
+	else if(key == "commodities")
 	{
 		commodities.clear();
 		for(int i = 1; i < node.Size(); ++i)
 			commodities.push_back(node.Token(i));
 	}
-	else if(node.Token(0) == "outfitters")
+	else if(key == "outfitters")
 	{
 		outfitters.clear();
 		for(int i = 1; i < node.Size(); ++i)

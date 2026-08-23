@@ -13,21 +13,21 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LOAD_PANEL_H_
-#define LOAD_PANEL_H_
+#pragma once
 
 #include "Panel.h"
 
 #include "Point.h"
 #include "Rectangle.h"
 #include "SavedGame.h"
+#include "Tooltip.h"
 
-#include <ctime>
+#include <filesystem>
 #include <map>
+#include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
+class PilotProfile;
 class PlayerInfo;
 class UI;
 
@@ -42,11 +42,14 @@ public:
 
 	virtual void Draw() override;
 
+	virtual void UpdateTooltipActivation() override;
+	virtual void UpdateTextDisplay() override;
+
 
 protected:
 	// Only override the ones you need; the default action is to return false.
 	virtual bool KeyDown(SDL_Keycode key, Uint16 mod, const Command &command, bool isNewPress) override;
-	virtual bool Click(int x, int y, int clicks) override;
+	virtual bool Click(int x, int y, MouseButton button, int clicks) override;
 	virtual bool Hover(int x, int y) override;
 	virtual bool Drag(double dx, double dy) override;
 	virtual bool Scroll(double dx, double dy) override;
@@ -57,7 +60,7 @@ private:
 
 	// Snapshot name callback.
 	void SnapshotCallback(const std::string &name);
-	void WriteSnapshot(const std::string &sourceFile, const std::string &snapshotName);
+	void WriteSnapshot(const std::filesystem::path &sourceFile, const std::filesystem::path &snapshotName);
 	// Load snapshot callback.
 	void LoadCallback();
 	// Delete callbacks.
@@ -70,8 +73,8 @@ private:
 	SavedGame loadedInfo;
 	UI &gamePanels;
 
-	std::map<std::string, std::vector<std::pair<std::string, std::time_t>>> files;
-	std::string selectedPilot;
+	std::map<std::string, std::shared_ptr<PilotProfile>> pilots;
+	std::shared_ptr<PilotProfile> selectedPilot;
 	std::string selectedFile;
 	// If the player enters a filename that exists, prompt before overwriting it.
 	std::string nameToConfirm;
@@ -80,13 +83,12 @@ private:
 	const Rectangle snapshotBox;
 
 	Point hoverPoint;
-	int hoverCount = 0;
+	Tooltip tooltip;
 	bool hasHover = false;
 	bool sideHasFocus = false;
 	double sideScroll = 0;
 	double centerScroll = 0;
+
+	std::string hoverFile;
+	std::string hoverFileTimestamp;
 };
-
-
-
-#endif

@@ -13,8 +13,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HAIL_PANEL_H_
-#define HAIL_PANEL_H_
+#pragma once
 
 #include "Panel.h"
 
@@ -30,6 +29,7 @@ class PlayerInfo;
 class Ship;
 class Sprite;
 class StellarObject;
+class TextArea;
 
 
 
@@ -41,6 +41,8 @@ public:
 	HailPanel(PlayerInfo &player, const std::shared_ptr<Ship> &ship,
 		std::function<void(const Government *)> bribeCallback);
 	HailPanel(PlayerInfo &player, const StellarObject *object);
+
+	virtual ~HailPanel() override;
 
 	virtual void Draw() override;
 
@@ -65,18 +67,15 @@ private:
 	int step = 0;
 
 	std::string header;
-	std::string message;
+	std::shared_ptr<TextArea> message;
 
 	int64_t bribe = 0;
 	const Government *bribed = nullptr;
 	bool playerNeedsHelp = false;
 	bool canAssistPlayer = true;
 	bool canGiveFuel = false;
+	bool canGiveEnergy = false;
 	bool canRepair = false;
 	bool hasLanguage = true;
 	bool requestedToBribeShip = false;
 };
-
-
-
-#endif

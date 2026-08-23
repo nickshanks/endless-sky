@@ -121,30 +121,42 @@ void WrappedText::SetParagraphBreak(int height)
 
 
 
-// Get the word positions when wrapping the given text. The coordinates
-// always begin at (0, 0).
 void WrappedText::Wrap(const string &str)
 {
-	SetText(str.data(), str.length());
-
-	Wrap();
+	original = str;
+	Rewrap();
 }
 
 
 
 void WrappedText::Wrap(const char *str)
 {
-	SetText(str, strlen(str));
+	original.assign(str, strlen(str));
+	Rewrap();
+}
 
+
+
+void WrappedText::Rewrap()
+{
+	// Copy the original text into a string that will be worked on to determine
+	// the spacing for the chosen text alignment.
+	text = original;
+	// Clear any previous word-wrapping data. It becomes invalid as soon as the
+	// underlying text buffer changes.
+	words.clear();
 	Wrap();
 }
 
 
 
-// Get the height of the wrapped text.
-int WrappedText::Height() const
+/// Get the height of the wrapped text.
+/// With trailingBreak, include a paragraph break after the text.
+int WrappedText::Height(bool trailingBreak) const
 {
-	return height;
+	if(!height)
+		return 0;
+	return height + trailingBreak * paragraphBreak;
 }
 
 
@@ -194,18 +206,6 @@ size_t WrappedText::Word::Index() const
 Point WrappedText::Word::Pos() const
 {
 	return Point(x, y);
-}
-
-
-
-void WrappedText::SetText(const char *it, size_t length)
-{
-	// Clear any previous word-wrapping data. It becomes invalid as soon as the
-	// underlying text buffer changes.
-	words.clear();
-
-	// Reallocate that buffer.
-	text.assign(it, length);
 }
 
 
@@ -313,7 +313,9 @@ void WrappedText::Wrap()
 	// Adjust the spacing of words in the final line of text.
 	AdjustLine(lineBegin, lineWidth, true);
 
-	height = word.y;
+	// We have over-calculated the actual height by an extra paragraph break,
+	// so subtract that.
+	height = max(0, word.y - paragraphBreak);
 }
 
 

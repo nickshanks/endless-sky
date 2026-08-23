@@ -21,7 +21,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Outfit.h"
 #include "Random.h"
 #include "Ship.h"
-#include "SpriteSet.h"
+#include "image/SpriteSet.h"
 #include "Visual.h"
 
 #include <cmath>
@@ -36,22 +36,15 @@ const int Flotsam::TONS_PER_BOX = 5;
 
 // Constructors for flotsam carrying either a commodity or an outfit.
 Flotsam::Flotsam(const string &commodity, int count, const Government *sourceGovernment)
-	: commodity(commodity), count(count), sourceGovernment(sourceGovernment)
+	: lifetime(Random::Int(3600) + 7200), commodity(commodity), count(count), sourceGovernment(sourceGovernment)
 {
-	lifetime = Random::Int(3600) + 7200;
-	// Scale lifetime in proportion to the expected amount per box.
-	if(count != TONS_PER_BOX)
-		lifetime = sqrt(count * (1. / TONS_PER_BOX)) * lifetime;
 }
 
 
 
 Flotsam::Flotsam(const Outfit *outfit, int count, const Government *sourceGovernment)
-	: outfit(outfit), count(count), sourceGovernment(sourceGovernment)
+	: lifetime(Random::Int(3600) + 7200), outfit(outfit), count(count), sourceGovernment(sourceGovernment)
 {
-	// The more the outfit costs, the faster this flotsam should disappear.
-	int lifetimeBase = 3000000000 / (outfit->Cost() * count + 1000000);
-	lifetime = Random::Int(lifetimeBase) + lifetimeBase + 600;
 }
 
 
@@ -63,6 +56,17 @@ void Flotsam::Place(const Ship &source)
 {
 	this->source = &source;
 	Place(source, Angle::Random().Unit() * (2. * Random::Real()) - 2. * source.Unit());
+}
+
+
+
+// Place this flotsam with its starting position at the specified bay of the source ship,
+// instead of the center of the ship.
+void Flotsam::Place(const Ship &source, size_t bayIndex)
+{
+	Place(source);
+	if(source.Bays().size() > bayIndex)
+		position += source.Facing().Rotate(source.Bays()[bayIndex].point);
 }
 
 
@@ -118,9 +122,16 @@ void Flotsam::Move(vector<Visual> &visuals)
 
 
 
-void Flotsam::SetVelocity(Point velocity)
+void Flotsam::SetVelocity(const Point &velocity)
 {
 	this->velocity = velocity;
+}
+
+
+
+void Flotsam::InTractorBeam()
+{
+	++lifetime;
 }
 
 

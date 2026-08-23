@@ -15,16 +15,20 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "PlayerInfoPanel.h"
 
-#include "text/alignment.hpp"
+#include "text/Alignment.h"
+#include "audio/Audio.h"
 #include "Command.h"
+#include "text/DisplayText.h"
+#include "shader/FillShader.h"
 #include "text/Font.h"
 #include "text/FontSet.h"
 #include "text/Format.h"
 #include "GameData.h"
+#include "Gamerules.h"
 #include "InfoPanelState.h"
 #include "Information.h"
 #include "Interface.h"
-#include "text/layout.hpp"
+#include "text/Layout.h"
 #include "LogbookPanel.h"
 #include "MissionPanel.h"
 #include "Planet.h"
@@ -35,7 +39,8 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "ShipInfoPanel.h"
 #include "System.h"
 #include "text/Table.h"
-#include "text/truncate.hpp"
+#include "TableArea.h"
+#include "text/Truncate.h"
 #include "UI.h"
 
 #include <algorithm>
@@ -48,45 +53,9 @@ namespace {
 	// Number of lines per page of the fleet listing.
 	const int LINES_PER_PAGE = 26;
 
-	// Draw a list of (string, value) pairs.
-	void DrawList(vector<pair<int64_t, string>> &list, Table &table, const string &title,
-		int maxCount = 0, bool drawValues = true)
-	{
-		if(list.empty())
-			return;
-
-		int otherCount = list.size() - maxCount;
-
-		if(otherCount > 0 && maxCount > 0)
-		{
-			list[maxCount - 1].second = "(" + to_string(otherCount + 1) + " others)";
-			while(otherCount--)
-			{
-				list[maxCount - 1].first += list.back().first;
-				list.pop_back();
-			}
-		}
-
-		const Color &dim = *GameData::Colors().Get("medium");
-		table.DrawGap(10);
-		table.DrawUnderline(dim);
-		table.Draw(title, *GameData::Colors().Get("bright"));
-		table.Advance();
-		table.DrawGap(5);
-
-		for(const auto &it : list)
-		{
-			table.Draw(it.second, dim);
-			if(drawValues)
-				table.Draw(it.first);
-			else
-				table.Advance();
-		}
-	}
-
 	bool CompareName(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
-		return lhs->Name() < rhs->Name();
+		return lhs->GivenName() < rhs->GivenName();
 	}
 
 	bool CompareModelName(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
@@ -101,23 +70,22 @@ namespace {
 			return false;
 		else if(rhs->GetSystem() == nullptr)
 			return true;
-		return lhs->GetSystem()->Name() < rhs->GetSystem()->Name();
+		return lhs->GetSystem()->DisplayName() < rhs->GetSystem()->DisplayName();
 	}
 
 	bool CompareShields(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
-		return lhs->Shields() < rhs->Shields();
+		return lhs->ShieldFraction() < rhs->ShieldFraction();
 	}
 
 	bool CompareHull(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
-		return lhs->Hull() < rhs->Hull();
+		return lhs->HullFraction() < rhs->HullFraction();
 	}
 
 	bool CompareFuel(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
-		return lhs->Attributes().Get("fuel capacity") * lhs->Fuel() <
-			rhs->Attributes().Get("fuel capacity") * rhs->Fuel();
+		return lhs->FuelLevel() < rhs->FuelLevel();
 	}
 
 	bool CompareRequiredCrew(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
@@ -131,7 +99,7 @@ namespace {
 	}
 
 	// A helper function for reversing the arguments of the given function F.
-	template <InfoPanelState::ShipComparator &F>
+	template<InfoPanelState::ShipComparator &F>
 	bool ReverseCompare(const shared_ptr<Ship> &lhs, const shared_ptr<Ship> &rhs)
 	{
 		return F(rhs, lhs);
@@ -177,17 +145,34 @@ PlayerInfoPanel::PlayerInfoPanel(PlayerInfo &player)
 PlayerInfoPanel::PlayerInfoPanel(PlayerInfo &player, InfoPanelState panelState)
 	: player(player), panelState(panelState)
 {
+	Audio::Pause();
 	SetInterruptible(false);
+}
+
+
+
+PlayerInfoPanel::~PlayerInfoPanel()
+{
+	Audio::Resume();
 }
 
 
 
 void PlayerInfoPanel::Step()
 {
-	// If the player has acquired a second ship for the first time, explain to
-	// them how to reorder and sort the ships in their fleet.
-	if(panelState.Ships().size() > 1)
-		DoHelp("multiple ships");
+	if(GetUI().IsTop(this) && !checkedHelp)
+	{
+		if(DoHelp("player info"))
+		{
+			// Nothing to do here, just don't want to execute the other branch.
+		}
+		// If the player has acquired a second ship for the first time, explain to
+		// them how to reorder and sort the ships in their fleet.
+		else if(panelState.Ships().size() > 1)
+			if(!DoHelp("multiple ships"))
+				DoHelp("fleet management");
+		checkedHelp = true;
+	}
 }
 
 
@@ -281,19 +266,23 @@ bool PlayerInfoPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &comman
 	if(key == 'd' || key == SDLK_ESCAPE || (key == 'w' && control)
 			|| key == 'i' || command.Has(Command::INFO))
 	{
-		GetUI()->Pop(this);
+		GetUI().Pop(this);
 	}
 	else if(command.Has(Command::HELP))
 	{
 		if(panelState.Ships().size() > 1)
+		{
+			DoHelp("fleet management", true);
 			DoHelp("multiple ships", true);
+		}
+		DoHelp("player info", true);
 	}
 	else if(key == 's' || key == SDLK_RETURN || key == SDLK_KP_ENTER || (control && key == SDLK_TAB))
 	{
 		if(!panelState.Ships().empty())
 		{
-			GetUI()->Pop(this);
-			GetUI()->Push(new ShipInfoPanel(player, std::move(panelState)));
+			GetUI().Pop(this);
+			GetUI().Push(new ShipInfoPanel(player, std::move(panelState)));
 		}
 	}
 	else if(key == SDLK_PAGEUP || key == SDLK_PAGEDOWN)
@@ -361,7 +350,7 @@ bool PlayerInfoPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &comman
 			}
 			else if(shift)
 			{
-				if(panelState.AllSelected().count(selectedIndex))
+				if(panelState.AllSelected().contains(selectedIndex))
 					panelState.Deselect(panelState.SelectedIndex());
 				if(isValidIndex)
 					panelState.SetSelectedIndex(selectedIndex);
@@ -449,9 +438,9 @@ bool PlayerInfoPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &comman
 		panelState.SetCurrentSort(nullptr);
 	}
 	else if(command.Has(Command::MAP) || key == 'm')
-		GetUI()->Push(new MissionPanel(player));
+		GetUI().Push(new MissionPanel(player));
 	else if(key == 'l' && player.HasLogs())
-		GetUI()->Push(new LogbookPanel(player));
+		GetUI().Push(new LogbookPanel(player));
 	else if(key >= '0' && key <= '9')
 	{
 		int group = key - '0';
@@ -461,13 +450,13 @@ bool PlayerInfoPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &comman
 			set<Ship *> selected;
 			for(int i : panelState.AllSelected())
 				selected.insert(panelState.Ships()[i].get());
-			player.SetGroup(group, &selected);
+			player.SetEscortGroup(group, &selected);
 		}
 		else
 		{
 			// Convert ship pointers into indices in the ship list.
 			set<int> added;
-			for(Ship *ship : player.GetGroup(group))
+			for(Ship *ship : player.GetEscortGroup(group))
 				for(size_t i = 0; i < panelState.Ships().size(); ++i)
 					if(panelState.Ships()[i].get() == ship)
 						added.insert(i);
@@ -502,8 +491,11 @@ bool PlayerInfoPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &comman
 
 
 
-bool PlayerInfoPanel::Click(int x, int y, int clicks)
+bool PlayerInfoPanel::Click(int x, int y, MouseButton button, int clicks)
 {
+	if(button != MouseButton::LEFT)
+		return false;
+
 	// Sort the ships if the click was on one of the column headers.
 	Point mouse = Point(x, y);
 	for(auto &zone : menuZones)
@@ -522,7 +514,7 @@ bool PlayerInfoPanel::Click(int x, int y, int clicks)
 	if(panelState.CanEdit() && (shift || control || clicks < 2))
 	{
 		// If the control+click was on an already selected ship, deselect it.
-		if(control && panelState.AllSelected().count(hoverIndex))
+		if(control && panelState.AllSelected().contains(hoverIndex))
 			panelState.Deselect(hoverIndex);
 		else
 		{
@@ -536,7 +528,7 @@ bool PlayerInfoPanel::Click(int x, int y, int clicks)
 				panelState.SelectMany(start, end + 1);
 				panelState.SetSelectedIndex(hoverIndex);
 			}
-			else if(panelState.AllSelected().count(hoverIndex))
+			else if(panelState.AllSelected().contains(hoverIndex))
 			{
 				// If the click is on an already selected line, start dragging
 				// but do not change the selection.
@@ -552,8 +544,8 @@ bool PlayerInfoPanel::Click(int x, int y, int clicks)
 		// If not landed, clicking a ship name takes you straight to its info.
 		if(!panelState.CanEdit() || sameIndex)
 		{
-			GetUI()->Pop(this);
-			GetUI()->Push(new ShipInfoPanel(player, std::move(panelState)));
+			GetUI().Pop(this);
+			GetUI().Push(new ShipInfoPanel(player, std::move(panelState)));
 		}
 	}
 
@@ -570,8 +562,10 @@ bool PlayerInfoPanel::Drag(double dx, double dy)
 
 
 
-bool PlayerInfoPanel::Release(int /* x */, int /* y */)
+bool PlayerInfoPanel::Release(int /* x */, int /* y */, MouseButton button)
 {
+	if(button != MouseButton::LEFT)
+		return false;
 	if(!isDragging)
 		return true;
 	isDragging = false;
@@ -637,47 +631,55 @@ void PlayerInfoPanel::DrawPlayer(const Rectangle &bounds)
 	}
 
 	// Display the factors affecting piracy targeting the player.
-	auto factors = player.RaidFleetFactors();
-	double attractionLevel = max(0., log2(max(factors.first, 0.)));
-	double deterrenceLevel = max(0., log2(max(factors.second, 0.)));
-	string attractionRating = GameData::Rating("cargo attractiveness", attractionLevel);
-	string deterrenceRating = GameData::Rating("armament deterrence", deterrenceLevel);
-	if(!attractionRating.empty() && !deterrenceRating.empty())
+	if(GameData::GetGamerules().SpawnRaidFleets())
 	{
-		double attraction = max(0., min(1., .005 * (factors.first - factors.second - 2.)));
-		double prob = 1. - pow(1. - attraction, 10.);
+		auto factors = player.RaidFleetFactors();
+		double attractionLevel = max(0., log2(max(factors.first, 0.)));
+		double deterrenceLevel = max(0., log2(max(factors.second, 0.)));
+		string attractionRating = GameData::Rating("cargo attractiveness", attractionLevel);
+		string deterrenceRating = GameData::Rating("armament deterrence", deterrenceLevel);
+		if(!attractionRating.empty() && !deterrenceRating.empty())
+		{
+			double attraction = max(0., min(1., .005 * (factors.first - factors.second - 2.)));
+			double prob = 1. - pow(1. - attraction, 10.);
 
-		table.DrawGap(10);
-		table.DrawUnderline(dim);
-		table.Draw("piracy threat:", bright);
-		table.Draw(to_string(lround(100 * prob)) + "%", dim);
-		table.DrawGap(5);
+			table.DrawGap(10);
+			table.DrawUnderline(dim);
+			table.Draw("piracy threat:", bright);
+			table.Draw(Format::Percentage(prob, 0), dim);
+			table.DrawGap(5);
 
-		// Format the attraction and deterrence levels with tens places, so it
-		// is clear which is higher even if they round to the same level.
-		table.DrawTruncatedPair("cargo: " + attractionRating, dim,
-			"(+" + Format::Decimal(attractionLevel, 1) + ")", dim, Truncate::MIDDLE, false);
-		table.DrawTruncatedPair("fleet: " + deterrenceRating, dim,
-			"(-" + Format::Decimal(deterrenceLevel, 1) + ")", dim, Truncate::MIDDLE, false);
+			// Format the attraction and deterrence levels with tens places, so it
+			// is clear which is higher even if they round to the same level.
+			table.DrawTruncatedPair("cargo: " + attractionRating, dim,
+				"(+" + Format::Number(attractionLevel, 1, false) + ")", dim, Truncate::MIDDLE, false);
+			table.DrawTruncatedPair("fleet: " + deterrenceRating, dim,
+				"(-" + Format::Number(deterrenceLevel, 1, false) + ")", dim, Truncate::MIDDLE, false);
+		}
 	}
+
 	// Other special information:
-	vector<pair<int64_t, string>> salary;
-	for(const auto &it : player.Accounts().SalariesIncome())
-		salary.emplace_back(it.second, it.first);
+	Point start = table.GetRowBounds().BottomLeft();
+	start.Y() -= 10.;
+	vector<pair<string, int64_t>> salary;
+	for(const auto &[name, value] : player.Accounts().SalariesIncome())
+		salary.emplace_back(name, value);
 	sort(salary.begin(), salary.end(), std::greater<>());
-	DrawList(salary, table, "salary:", 4);
+	DrawList(salary, salaryArea, start, columnWidth, "salary:", player.Accounts().SalariesIncomeTotal(),
+		min<int>(salary.size(), 4) * 20);
 
-	vector<pair<int64_t, string>> tribute;
-	for(const auto &it : player.GetTribute())
-		tribute.emplace_back(it.second, it.first->TrueName());
+	vector<pair<string, int64_t>> tribute;
+	for(const auto &[planet, value] : player.GetTribute())
+		tribute.emplace_back(planet->TrueName(), value);
 	sort(tribute.begin(), tribute.end(), std::greater<>());
-	DrawList(tribute, table, "tribute:", 4);
+	DrawList(tribute, tributeArea, start, columnWidth, "tribute:", player.GetTributeTotal(),
+		min<int>(tribute.size(), 4) * 20);
 
-	int maxRows = static_cast<int>(250. - 30. - table.GetPoint().Y()) / 20;
-	vector<pair<int64_t, string>> licenses;
-	for(const auto &it : player.Licenses())
-		licenses.emplace_back(1, it);
-	DrawList(licenses, table, "licenses:", maxRows, false);
+	vector<pair<string, int64_t>> licenses;
+	for(const string &it : player.Licenses())
+		licenses.emplace_back(it, 1);
+	DrawList(licenses, licenseArea, start, columnWidth, "licenses:", licenses.size(),
+		250. - start.Y(), false);
 }
 
 
@@ -741,7 +743,7 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 		// Check if this row is selected.
 		if(panelState.SelectedIndex() == index)
 			table.DrawHighlight(selectedBack);
-		else if(panelState.AllSelected().count(index))
+		else if(panelState.AllSelected().contains(index))
 			table.DrawHighlight(back);
 
 		// Find out if the mouse is hovering over the ship
@@ -767,20 +769,17 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 		);
 
 		// Indent the ship name if it is a fighter or drone.
-		table.Draw(ship.CanBeCarried() ? "    " + ship.Name() : ship.Name());
+		table.Draw(ship.CanBeCarried() ? "    " + ship.GivenName() : ship.GivenName());
 		table.Draw(ship.DisplayModelName());
 
 		const System *system = ship.GetSystem();
-		table.Draw(system ? (player.KnowsName(*system) ? system->Name() : "???") : "");
+		table.Draw(system ? (player.KnowsName(*system) ? system->DisplayName() : "???") : "");
 
-		string shields = to_string(static_cast<int>(100. * max(0., ship.Shields()))) + "%";
-		table.Draw(shields);
+		table.Draw(Format::Percentage(max(0., ship.ShieldFraction()), 0));
 
-		string hull = to_string(static_cast<int>(100. * max(0., ship.Hull()))) + "%";
-		table.Draw(hull);
+		table.Draw(Format::Percentage(max(0., ship.HullFraction()), 0));
 
-		string fuel = to_string(static_cast<int>(
-			ship.Attributes().Get("fuel capacity") * ship.Fuel()));
+		string fuel = to_string(static_cast<int>(ship.FuelLevel()));
 		table.Draw(fuel);
 
 		// If this isn't the flagship, we'll remember how many crew it has, but
@@ -801,12 +800,50 @@ void PlayerInfoPanel::DrawFleet(const Rectangle &bounds)
 		Point pos(hoverPoint.X(), hoverPoint.Y());
 		for(int i : panelState.AllSelected())
 		{
-			const string &name = panelState.Ships()[i]->Name();
+			const string &name = panelState.Ships()[i]->GivenName();
 			font.Draw(name, pos + Point(1., 1.), Color(0., 1.));
 			font.Draw(name, pos, bright);
 			pos.Y() += 20.;
 		}
 	}
+}
+
+
+
+void PlayerInfoPanel::DrawList(const vector<pair<string, int64_t>> &list, shared_ptr<TableArea> &area, Point &topLeft,
+	int width, const string &title, int64_t titleValue, int height, bool drawValues)
+{
+	if(list.empty())
+		return;
+
+	const Font &font = FontSet::Get(14);
+	const Color &bright = *GameData::Colors().Get("bright");
+	const Color &dim = *GameData::Colors().Get("medium");
+
+	font.Draw({title, {width, Alignment::LEFT}}, topLeft, bright);
+	font.Draw({Format::Number(titleValue), {width, Alignment::RIGHT}}, topLeft, dim);
+	FillShader::Fill(Rectangle::FromCorner(topLeft + Point(0., font.Height() - 2.), Point(width, 1.)), dim);
+	topLeft.Y() += 25.;
+
+	if(!area)
+	{
+		area = make_shared<TableArea>();
+		area->SetFontSize(14);
+		area->SetRect(Rectangle::FromCorner(topLeft, Point(width, height)));
+		area->AddColumn(0, {width, Alignment::LEFT}, dim);
+		area->AddColumn(width, {width, Alignment::RIGHT}, bright);
+		for(const auto &[name, value] : list)
+		{
+			area->AddCell(name);
+			if(drawValues)
+				area->AddCell(value);
+			else
+				area->NextRow();
+		}
+		AddChild(area);
+	}
+
+	topLeft.Y() += height + 5;
 }
 
 

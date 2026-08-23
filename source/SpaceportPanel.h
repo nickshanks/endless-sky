@@ -13,18 +13,18 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPACEPORT_PANEL_H_
-#define SPACEPORT_PANEL_H_
+#pragma once
 
 #include "Panel.h"
 
 #include "Information.h"
-#include "text/WrappedText.h"
 
+class Interface;
 class News;
 class PlayerInfo;
 class Port;
-class Interface;
+class TextArea;
+
 
 
 // GUI panel to be shown when you are in a spaceport. This just draws the port
@@ -39,26 +39,27 @@ public:
 	virtual void Step() override;
 	virtual void Draw() override;
 
+	virtual void UpdateTextDisplay() override;
+
+
+protected:
+	virtual void Resize() override;
+
 
 private:
+	void InitNewsTextArea();
+	void ResizeNewsTextArea() const;
 	const News *PickNews() const;
 
 
 private:
 	PlayerInfo &player;
-	WrappedText text;
+	std::shared_ptr<TextArea> description;
 	const Port &port;
-	const Interface &ui;
 
 	// Current news item (if any):
 	bool hasNews = false;
 	bool hasPortrait = false;
-	int portraitWidth;
-	int normalWidth;
 	Information newsInfo;
-	WrappedText newsMessage;
+	std::shared_ptr<TextArea> newsMessage;
 };
-
-
-
-#endif

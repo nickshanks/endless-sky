@@ -14,6 +14,7 @@
 ship "Pug Zibruka"
 	sprite "ship/pug zibruka"
 	thumbnail "thumbnail/pug zibruka"
+	"administrative cost" 1
 	attributes
 		category "Light Warship"
 		"cost" 1900000
@@ -64,6 +65,7 @@ ship "Pug Zibruka"
 ship "Pug Enfolta"
 	sprite "ship/pug enfolta"
 	thumbnail "thumbnail/pug enfolta"
+	"administrative cost" 3
 	attributes
 		category "Medium Warship"
 		"cost" 6300000
@@ -119,6 +121,7 @@ ship "Pug Enfolta"
 ship "Pug Maboro"
 	sprite "ship/pug maboro"
 	thumbnail "thumbnail/pug maboro"
+	"administrative cost" 6
 	attributes
 		category "Heavy Warship"
 		"cost" 9500000
@@ -176,6 +179,7 @@ ship "Pug Maboro"
 ship "Pug Arfecta"
 	sprite "ship/pug arfecta"
 	thumbnail "thumbnail/pug arfecta"
+	"administrative cost" 10
 	attributes
 		category "Medium Warship"
 		"cost" 90000000
@@ -192,13 +196,13 @@ ship "Pug Arfecta"
 		"weapon capacity" 390
 		"engine capacity" 220
 		"energy capacity" 10000
-		"energy generation" 200
+		"energy generation" 90
 		"heat generation" 10
-		"shield generation" 32
-		"shield energy" 32
+		"shield generation" 24
+		"shield energy" 24
 		"hull repair rate" 5
 		"hull energy" 5
-		"cloaking fuel" -.2
+		"cloaking fuel" -.15
 		"reverse thrust" 99
 		"reverse thrusting energy" 4.9
 		"reverse thrusting heat" 6.9

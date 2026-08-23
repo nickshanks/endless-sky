@@ -13,13 +13,12 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef STELLAR_OBJECT_H_
-#define STELLAR_OBJECT_H_
+#pragma once
 
 #include "Body.h"
-#include "Hazard.h"
 #include "RandomEvent.h"
 
+class Hazard;
 class Planet;
 class Ship;
 
@@ -32,10 +31,16 @@ class Ship;
 // objects in each system move slightly in their orbits.
 class StellarObject : public Body {
 public:
+	// Disable certain checks that require images to be loaded since they are
+	// never loaded when the "matches" command is in use.
+	static void UsingMatchesCommand();
+
+
+public:
 	StellarObject();
 
 	// Functions provided by the Body base class:
-	// bool HasSprite() const;
+	bool HasSprite() const;
 	// int Width() const;
 	// int Height() const;
 	// Frame GetFrame(int step = -1) const;
@@ -53,7 +58,7 @@ public:
 	const Planet *GetPlanet() const;
 
 	// Only planets that you can land on have names.
-	const std::string &Name() const;
+	const std::string &DisplayName() const;
 	// If it is impossible to land on this planet, get the message
 	// explaining why (e.g. too hot, too cold, etc.).
 	const std::string &LandingMessage() const;
@@ -66,12 +71,15 @@ public:
 	bool IsStation() const;
 	// Check if this is a moon.
 	bool IsMoon() const;
-	// Get this object's parent index (in the System's vector of objects).
+	// Get this object's own index or parent index (in the System's vector of objects).
+	int Index() const;
 	int Parent() const;
 	// This object's system hazards.
 	const std::vector<RandomEvent<Hazard>> &Hazards() const;
 	// Find out how far this object is from its parent.
 	double Distance() const;
+	double Period() const;
+	double Offset() const;
 
 
 private:
@@ -79,8 +87,10 @@ private:
 
 	double distance;
 	double speed;
+	bool explicitPeriodSet = false;
 	double offset;
 	std::vector<RandomEvent<Hazard>> hazards;
+	int index;
 	int parent;
 
 	const std::string *message;
@@ -91,7 +101,3 @@ private:
 	// Let System handle setting all the values of an Object.
 	friend class System;
 };
-
-
-
-#endif

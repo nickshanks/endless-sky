@@ -14,6 +14,7 @@
 ship "Emerald Sword"
 	sprite ship/emeraldsword
 	thumbnail "thumbnail/emeraldsword"
+	"administrative cost" 10
 	swizzle 3
 	attributes
 		category "Superheavy"
@@ -167,6 +168,7 @@ ship "Emerald Sword" "Emerald Sword (Fixed)"
 ship "Black Diamond"
 	sprite "ship/blackdiamond"
 	thumbnail "thumbnail/blackdiamond"
+	"administrative cost" 0
 	swizzle 9
 	attributes
 		category "Fighter"
@@ -180,8 +182,8 @@ ship "Black Diamond"
 		"outfit space" 152
 		"weapon capacity" 35
 		"engine capacity" 38
-		"hull repair rate" 1
-		"hull delay" 60
+		"delayed hull repair rate" 1
+		"repair delay" 60
 		weapon
 			"blast radius" 24
 			"shield damage" 240

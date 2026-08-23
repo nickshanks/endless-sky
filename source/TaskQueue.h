@@ -13,8 +13,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TASK_QUEUE_H_
-#define TASK_QUEUE_H_
+#pragma once
 
 #include <functional>
 #include <future>
@@ -50,6 +49,13 @@ public:
 	// The maximum amount of sync tasks to execute in one go.
 	static constexpr int MAX_SYNC_TASKS = 100;
 
+
+public:
+	// Set the number of worker threads for TaskQueues to run their tasks on.
+	// If not used, a default based on system resources will be chosen.
+	static void SetWorkerThreadCount(uint64_t count);
+
+
 public:
 	// Initialize the threads used to execute the tasks.
 	TaskQueue() = default;
@@ -57,7 +63,7 @@ public:
 	TaskQueue &operator=(const TaskQueue &) = delete;
 	~TaskQueue();
 
-	// Queue a function to execute in parallel, with an another optional function that
+	// Queue a function to execute in parallel, with another optional function that
 	// will get executed on the main thread after the first function finishes.
 	// Returns a future representing the future result of the async call. Ignores
 	// any main thread task that still need to be executed!
@@ -83,9 +89,7 @@ public:
 private:
 	std::list<std::shared_future<void>> futures;
 
-	// Tasks from ths queue that need to be executed on the main thread.
+	// Tasks from this queue that need to be executed on the main thread.
 	std::queue<std::function<void()>> syncTasks;
 	mutable std::mutex syncMutex;
 };
-
-#endif

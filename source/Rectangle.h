@@ -13,8 +13,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RECTANGLE_H_
-#define RECTANGLE_H_
+#pragma once
 
 #include "Point.h"
 
@@ -46,6 +45,10 @@ public:
 	Rectangle operator-(const Point &offset) const;
 	Rectangle &operator-=(const Point &offset);
 
+	// Comparison operator.
+	bool operator==(const Rectangle &other) const = default;
+	bool operator!=(const Rectangle &other) const = default;
+
 	// Query the attributes of the rectangle.
 	Point Center() const;
 	Point Dimensions() const;
@@ -56,6 +59,8 @@ public:
 	double Right() const;
 	double Bottom() const;
 	Point TopLeft() const;
+	Point TopRight() const;
+	Point BottomLeft() const;
 	Point BottomRight() const;
 
 	// Check if a point is inside this rectangle.
@@ -73,7 +78,3 @@ private:
 	Point center;
 	Point dimensions;
 };
-
-
-
-#endif
