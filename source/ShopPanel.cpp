@@ -290,7 +290,9 @@ void ShopPanel::Draw()
 		for(const auto &[ship, offset] : dragOffsets)
 		{
 			const Sprite *sprite = ship->GetSprite();
-			if(!sprite) continue;
+			if(!sprite)
+				continue;
+
 			float scale = ICON_SIZE / max(sprite->Width(), sprite->Height());
 			Point drawPoint = dragPoint + offset;
 			if(Preferences::Has(SHIP_OUTLINES))
@@ -302,7 +304,7 @@ void ShopPanel::Draw()
 			else
 			{
 				const Swizzle *swizzle = ship->CustomSwizzle()
-					? ship->CustomSwizzle() : GameData::PlayerGovernment()->GetSwizzle();
+					? ship->CustomSwizzle() : player.GetPlanet()->GetGovernment()->GetSwizzle();
 				SpriteShader::Draw(sprite, drawPoint, scale, swizzle);
 			}
 		}
@@ -329,7 +331,7 @@ void ShopPanel::UpdateTooltipActivation()
 
 
 
-void ShopPanel::DrawShip(const Ship &ship, const Point &center, bool isSelected)
+void ShopPanel::DrawShip(const Ship &ship, const Point &center, bool isSelected, bool isOwned)
 {
 	const Sprite *back = SpriteSet::Get(
 		isSelected ? "ui/shipyard selected" : "ui/shipyard unselected");
@@ -337,7 +339,11 @@ void ShopPanel::DrawShip(const Ship &ship, const Point &center, bool isSelected)
 
 	const Sprite *thumbnail = ship.Thumbnail();
 	const Sprite *sprite = ship.GetSprite();
-	const Swizzle *swizzle = ship.CustomSwizzle() ? ship.CustomSwizzle() : GameData::PlayerGovernment()->GetSwizzle();
+	const Swizzle *swizzle = ship.CustomSwizzle()
+		? ship.CustomSwizzle()
+		: isOwned
+			? GameData::PlayerGovernment()->GetSwizzle()
+			: player.GetPlanet()->GetGovernment()->GetSwizzle();
 	if(thumbnail)
 	{
 		if(thumbnail->IsLoaded())
@@ -1044,7 +1050,7 @@ void ShopPanel::DrawShipsSidebar()
 			else
 			{
 				const Swizzle *swizzle = ship->CustomSwizzle() ? ship->CustomSwizzle() :
-					GameData::PlayerGovernment()->GetSwizzle();
+					player.GetPlanet()->GetGovernment()->GetSwizzle();
 				SpriteShader::Draw(sprite, isMultiShipStack ? point - stackAdjust : point, scale, swizzle);
 			}
 		}
@@ -1104,7 +1110,7 @@ void ShopPanel::DrawShipsSidebar()
 	{
 		point.Y() += SHIP_SIZE / 2;
 		point.X() = (Screen::Right() - SIDEBAR_CONTENT / 2) - SIDEBAR_PADDING;
-		DrawShip(*playerShip, point, true);
+		DrawShip(*playerShip, point, true, true);
 
 		Point offset(SIDEBAR_CONTENT / -2, SHIP_SIZE / 2);
 		const int detailHeight = DrawPlayerShipInfo(point + offset);

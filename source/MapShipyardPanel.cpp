@@ -21,6 +21,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "text/Format.h"
 #include "GameData.h"
 #include "Gamerules.h"
+#include "Government.h"
 #include "Information.h"
 #include "Planet.h"
 #include "PlayerInfo.h"
@@ -86,14 +87,36 @@ const Sprite *MapShipyardPanel::CompareSprite() const
 
 const Swizzle *MapShipyardPanel::SelectedSpriteSwizzle() const
 {
-	return selected->CustomSwizzle();
+	const Swizzle *swizzle = selected->CustomSwizzle();
+	if (swizzle == NULL && onlyShowStorageHere)
+	{
+		swizzle = GameData::PlayerGovernment()->GetSwizzle();
+	}
+	else if (swizzle == NULL)
+	{
+		swizzle = selectedPlanet
+			? selectedPlanet->GetGovernment()->GetSwizzle()
+			: selectedSystem
+				? selectedSystem->GetGovernment()->GetSwizzle()
+				: NULL;
+	}
+	return swizzle;
 }
 
 
 
 const Swizzle *MapShipyardPanel::CompareSpriteSwizzle() const
 {
-	return compare->CustomSwizzle();
+	const Swizzle *swizzle = compare->CustomSwizzle();
+	if (swizzle == NULL)
+	{
+		swizzle = selectedPlanet
+			? selectedPlanet->GetGovernment()->GetSwizzle()
+			: selectedSystem
+				? selectedSystem->GetGovernment()->GetSwizzle()
+				: NULL;
+	}
+	return swizzle;
 }
 
 
@@ -212,7 +235,7 @@ void MapShipyardPanel::DrawItems()
 	{
 		const string &category = cat.Name();
 		auto it = catalog.find(category);
-		if(it == catalog.end())
+		if(it == catalog.end() || it->second.empty())
 			continue;
 
 		// Draw the header. If this category is collapsed, skip drawing the items.
@@ -263,7 +286,12 @@ void MapShipyardPanel::DrawItems()
 				: parkedInSystem == 1
 				? "1 ship parked"
 				: Format::Number(parkedInSystem) + " ships parked";
-			Draw(corner, sprite, ship->CustomSwizzle(), 0, isForSale, ship == selected,
+
+			const Swizzle *swizzle = ship->CustomSwizzle();
+			if (swizzle == NULL && onlyShowStorageHere)
+				swizzle = GameData::PlayerGovernment()->GetSwizzle();
+
+			Draw(corner, sprite, swizzle, 0, isForSale, ship == selected,
 					ship->DisplayModelName(), ship->VariantMapShopName(), price, info, parking_details);
 			list.push_back(ship);
 		}

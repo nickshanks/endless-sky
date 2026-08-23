@@ -30,6 +30,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Interface.h"
 #include "ItemInfoDisplay.h"
 #include "text/Layout.h"
+#include "Planet.h"
 #include "PlayerInfo.h"
 #include "Point.h"
 #include "shader/PointerShader.h"
@@ -429,6 +430,14 @@ void MapSalesPanel::Draw(Point &corner, const Sprite *sprite, const Swizzle *swi
 		if(isSelected)
 			FillShader::Fill(Rectangle::FromCorner(corner, blockSize), selectionColor);
 
+		if (swizzle == NULL)
+		{
+		  swizzle = selectedPlanet
+				? selectedPlanet->GetGovernment()->GetSwizzle()
+				: selectedSystem
+					? selectedSystem->GetGovernment()->GetSwizzle()
+					: NULL;
+		}
 		DrawSprite(corner, sprite, swizzle, frame);
 
 		const Color &mediumColor = *GameData::Colors().Get("medium");

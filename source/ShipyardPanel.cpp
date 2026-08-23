@@ -146,7 +146,7 @@ double ShipyardPanel::DrawDetails(const Point &center)
 
 		const Point spriteCenter(center.X(), center.Y() + 20 + TileSize() / 2);
 		const Point startPoint(center.X() - INFOBAR_WIDTH / 2 + 20, center.Y() + 20 + TileSize());
-		const Sprite *background = SpriteSet::Get("ui/shipyard selected");
+		const Sprite *background = SpriteSet::Get("ui/shipyard unselected");
 		SpriteShader::Draw(background, spriteCenter);
 
 		const Sprite *shipSprite = selectedShip->GetSprite();
@@ -154,7 +154,7 @@ double ShipyardPanel::DrawDetails(const Point &center)
 		{
 			const float spriteScale = min(1.f, (INFOBAR_WIDTH - 60.f) / max(shipSprite->Width(), shipSprite->Height()));
 			const Swizzle *swizzle = selectedShip->CustomSwizzle()
-				? selectedShip->CustomSwizzle() : GameData::PlayerGovernment()->GetSwizzle();
+				? selectedShip->CustomSwizzle() : player.GetPlanet()->GetGovernment()->GetSwizzle();
 			SpriteShader::Draw(shipSprite, spriteCenter, spriteScale, swizzle);
 		}
 
