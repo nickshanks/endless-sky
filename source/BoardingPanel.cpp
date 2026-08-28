@@ -154,6 +154,7 @@ BoardingPanel::~BoardingPanel()
 
 void BoardingPanel::Step()
 {
+	step++;
 	scroll.Step();
 }
 
@@ -291,7 +292,10 @@ void BoardingPanel::DrawOutfitInfo()
 	if(hasDescription && !collapsed.contains(DESCRIPTION))
 		descriptionOffset = outfitInfo.DescriptionHeight();
 
-	const Sprite *thumbnail = selectedOutfit->Thumbnail();
+	Drawable drawable = selectedOutfit->AnimatedThumbnail();
+	bool isAnimated = drawable.GetSprite() != nullptr;
+	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
+	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selectedOutfit->Thumbnail();
 	const float tileSize = thumbnail
 		? max(thumbnail->Height(), static_cast<float>(OUTFIT_SIZE))
 		: static_cast<float>(OUTFIT_SIZE);
@@ -313,7 +317,7 @@ void BoardingPanel::DrawOutfitInfo()
 	const Sprite *background = SpriteSet::Get("ui/outfitter unselected");
 	SpriteShader::Draw(background, thumbnailCenter);
 	if(thumbnail)
-		SpriteShader::Draw(thumbnail, thumbnailCenter);
+		SpriteShader::Draw(thumbnail, thumbnailCenter, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
 
 	if(hasDescription)
 	{

@@ -147,6 +147,8 @@ private:
 	ScrollVar<double> scroll;
 	ScrollBar scrollBar;
 
+	// Whether or not the ship can be captured.
+	bool canCapture = false;
 	bool playerDied = false;
 	bool isCapturing = false;
 	bool isFirstCaptureAction = true;
@@ -158,6 +160,5 @@ private:
 	std::string messages;
 	std::shared_ptr<TextArea> messageDisplay;
 
-	// Whether or not the ship can be captured.
-	bool canCapture = false;
+	float step = 0.f;
 };
