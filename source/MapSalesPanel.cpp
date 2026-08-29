@@ -21,6 +21,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Command.h"
 #include "DialogPanel.h"
 #include "text/DisplayText.h"
+#include "Drawable.h"
 #include "shader/FillShader.h"
 #include "text/Font.h"
 #include "text/FontSet.h"
@@ -33,9 +34,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Planet.h"
 #include "PlayerInfo.h"
 #include "Point.h"
-#include "shader/PointerShader.h"
 #include "Preferences.h"
-#include "shader/RingShader.h"
 #include "Screen.h"
 #include "image/Sprite.h"
 #include "image/SpriteSet.h"
@@ -84,6 +83,7 @@ void MapSalesPanel::Step()
 {
 	MapPanel::Step();
 
+	++step;
 	loadingCircle.Step();
 	// Load any and deferred thumbnails that appear in the sales.
 	// This is done here instead of in the constructor because the constructor
@@ -253,20 +253,6 @@ bool MapSalesPanel::Scroll(double dx, double dy)
 
 
 
-void MapSalesPanel::DrawSelectedSprite(const Point &corner) const
-{
-	DrawSprite(corner, SelectedSprite(), SelectedSpriteSwizzle());
-}
-
-
-
-void MapSalesPanel::DrawCompareSprite(const Point &corner) const
-{
-	DrawSprite(corner, CompareSprite(), CompareSpriteSwizzle());
-}
-
-
-
 const Swizzle *MapSalesPanel::SelectedSpriteSwizzle() const
 {
 	return Swizzle::None();
@@ -347,13 +333,13 @@ void MapSalesPanel::DrawInfo() const
 			topLeft.X() += compareInfo.PanelWidth() + box->Width();
 
 			SpriteShader::Draw(box, topLeft + Point(-50., 100.));
-			DrawSelectedSprite(topLeft + Point(-95., 5.));
-			DrawCompareSprite(topLeft + Point(-95., 105.));
+			DrawSprite(topLeft + Point(-95., 5.), SelectedSprite(), true, SelectedSpriteSwizzle());
+			DrawSprite(topLeft + Point(-95., 105.), CompareSprite(), true, CompareSpriteSwizzle());
 		}
 		else
 		{
 			SpriteShader::Draw(box, topLeft + Point(-60., 50.));
-			DrawSelectedSprite(topLeft + Point(-95., 5.));
+			DrawSprite(topLeft + Point(-95., 5.), SelectedSprite(), true, SelectedSpriteSwizzle());
 		}
 		selectedInfo.DrawAttributes(topLeft);
 	}
@@ -382,8 +368,10 @@ bool MapSalesPanel::DrawHeader(Point &corner, const string &category)
 
 
 
-void MapSalesPanel::DrawSprite(const Point &corner, const Sprite *sprite, const Swizzle *swizzle, int frame) const
+void MapSalesPanel::DrawSprite(const Point &corner, const Drawable &drawable, bool animate,
+	const Swizzle *swizzle) const
 {
+	const Sprite *sprite = drawable.GetSprite();
 	if(!sprite)
 		return;
 	Point iconOffset(.5 * ICON_HEIGHT, .5 * ICON_HEIGHT);
@@ -394,7 +382,11 @@ void MapSalesPanel::DrawSprite(const Point &corner, const Sprite *sprite, const 
 		// No swizzle was specified, so default to the player swizzle.
 		if(!swizzle)
 			swizzle = GameData::PlayerGovernment()->GetSwizzle();
-		SpriteShader::Draw(sprite, corner + iconOffset, scale, swizzle, frame);
+		if(animate)
+			drawable.UnpauseAnimation();
+		else
+			drawable.PauseAnimation();
+		SpriteShader::Draw(sprite, corner + iconOffset, scale, swizzle, drawable.GetFrame(step));
 	}
 	else if(sprite->HasDimensions())
 		loadingCircle.Draw(corner + iconOffset);
@@ -402,8 +394,8 @@ void MapSalesPanel::DrawSprite(const Point &corner, const Sprite *sprite, const 
 
 
 
-void MapSalesPanel::Draw(Point &corner, const Sprite *sprite, const Swizzle *swizzle, int frame,
-		bool isForSale, bool isSelected, const string &name, const string &variantName,
+void MapSalesPanel::Draw(Point &corner, const Drawable &drawable, const Swizzle *swizzle, bool isForSale,
+		bool isSelected, const string &name, const string &variantName,
 		const string &price, const string &info, const string &storage)
 {
 	const Font &font = FontSet::Get(14);
@@ -430,15 +422,7 @@ void MapSalesPanel::Draw(Point &corner, const Sprite *sprite, const Swizzle *swi
 		if(isSelected)
 			FillShader::Fill(Rectangle::FromCorner(corner, blockSize), selectionColor);
 
-		if (swizzle == NULL)
-		{
-		  swizzle = selectedPlanet
-				? selectedPlanet->GetGovernment()->GetSwizzle()
-				: selectedSystem
-					? selectedSystem->GetGovernment()->GetSwizzle()
-					: NULL;
-		}
-		DrawSprite(corner, sprite, swizzle, frame);
+		DrawSprite(corner, drawable, true, swizzle);
 
 		const Color &mediumColor = *GameData::Colors().Get("medium");
 		const Color &dimColor = *GameData::Colors().Get("dim");

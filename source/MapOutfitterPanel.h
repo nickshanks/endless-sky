@@ -39,8 +39,8 @@ public:
 protected:
 	virtual void LoadCatalogThumbnails() const override;
 
-	virtual const Sprite *SelectedSprite() const override;
-	virtual const Sprite *CompareSprite() const override;
+	virtual const Drawable &SelectedSprite() const override;
+	virtual const Drawable &CompareSprite() const override;
 	virtual const ItemInfoDisplay &SelectedInfo() const override;
 	virtual const ItemInfoDisplay &CompareInfo() const override;
 
@@ -51,8 +51,6 @@ protected:
 
 	virtual void DrawKey(Information &info) const override;
 	virtual void DrawItems() override;
-	virtual void DrawSelectedSprite(const Point &corner) const override;
-	virtual void DrawCompareSprite(const Point &corner) const override;
 
 
 private:

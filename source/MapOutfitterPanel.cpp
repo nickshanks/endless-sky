@@ -70,56 +70,16 @@ void MapOutfitterPanel::LoadCatalogThumbnails() const
 
 
 
-const Sprite *MapOutfitterPanel::SelectedSprite() const
+const Drawable &MapOutfitterPanel::SelectedSprite() const
 {
-	if(!selected)
-		return nullptr;
-
-	Drawable drawable = selected->AnimatedThumbnail();
-	bool isAnimated = drawable.GetSprite() != nullptr;
-	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selected->Thumbnail();
-	return thumbnail;
+	return selected->Thumbnail();
 }
 
 
 
-void MapOutfitterPanel::DrawSelectedSprite(const Point &corner) const
+const Drawable &MapOutfitterPanel::CompareSprite() const
 {
-	if(!selected)
-		return;
-
-	Drawable drawable = selected->AnimatedThumbnail();
-	bool isAnimated = drawable.GetSprite() != nullptr;
-	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
-	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selected->Thumbnail();
-	DrawSprite(corner, thumbnail, SelectedSpriteSwizzle(), frame);
-}
-
-
-
-const Sprite *MapOutfitterPanel::CompareSprite() const
-{
-	if(!compare)
-		return nullptr;
-
-	Drawable drawable = compare->AnimatedThumbnail();
-	bool isAnimated = drawable.GetSprite() != nullptr;
-	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : compare->Thumbnail();
-	return thumbnail;
-}
-
-
-
-void MapOutfitterPanel::DrawCompareSprite(const Point &corner) const
-{
-	if(!compare)
-		return;
-
-	Drawable drawable = compare->AnimatedThumbnail();
-	bool isAnimated = drawable.GetSprite() != nullptr;
-	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
-	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : compare->Thumbnail();
-	DrawSprite(corner, thumbnail, CompareSpriteSwizzle(), frame);
+	return compare->Thumbnail();
 }
 
 
@@ -311,10 +271,7 @@ void MapOutfitterPanel::DrawItems()
 				? "1 unit in storage"
 				: Format::Number(storedInSystem) + " units in storage";
 
-			const Sprite *thumbnailSprite = outfit->AnimatedThumbnail().GetSprite();
-			const Sprite *sprite = thumbnailSprite ? thumbnailSprite : outfit->Thumbnail();
-			int frame = outfit->AnimatedThumbnail().GetFrame(step);
-			Draw(corner, sprite, Swizzle::None(), frame, isForSale, outfit == selected,
+			Draw(corner, outfit->Thumbnail(), Swizzle::None(), isForSale, outfit == selected,
 				outfit->DisplayName(), "", price, info, storage_details);
 			if(!hasAppliedInitialSelection && initialSelection && outfit == initialSelection)
 				initialSelectionIndex = static_cast<int>(list.size());

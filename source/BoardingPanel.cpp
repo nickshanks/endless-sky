@@ -59,6 +59,7 @@ namespace {
 BoardingPanel::BoardingPanel(PlayerInfo &player, const shared_ptr<Ship> &victim)
 	: player(player), you(player.FlagshipPtr()), victim(victim),
 	collapsed(player.Collapsed("boarding")),
+	loadingCircle(30.f, 10, 2.),
 	attackOdds(*you, *victim), defenseOdds(*victim, *you)
 {
 	Audio::Pause();
@@ -292,12 +293,10 @@ void BoardingPanel::DrawOutfitInfo()
 	if(hasDescription && !collapsed.contains(DESCRIPTION))
 		descriptionOffset = outfitInfo.DescriptionHeight();
 
-	Drawable drawable = selectedOutfit->AnimatedThumbnail();
-	bool isAnimated = drawable.GetSprite() != nullptr;
-	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
-	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selectedOutfit->Thumbnail();
-	const float tileSize = thumbnail
-		? max(thumbnail->Height(), static_cast<float>(OUTFIT_SIZE))
+	const Drawable &thumbnail = selectedOutfit->Thumbnail();
+	const Sprite *thumbnailSprite = thumbnail.GetSprite();
+	const float tileSize = thumbnailSprite
+		? max(thumbnailSprite->Height(), static_cast<float>(OUTFIT_SIZE))
 		: static_cast<float>(OUTFIT_SIZE);
 	double bufferHeight = tileSize +
 		descriptionOffset +
@@ -316,8 +315,17 @@ void BoardingPanel::DrawOutfitInfo()
 
 	const Sprite *background = SpriteSet::Get("ui/outfitter unselected");
 	SpriteShader::Draw(background, thumbnailCenter);
-	if(thumbnail)
-		SpriteShader::Draw(thumbnail, thumbnailCenter, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
+	if(thumbnailSprite)
+	{
+		if(thumbnailSprite->IsLoaded())
+		{
+			thumbnail.UnpauseAnimation();
+			SpriteShader::Draw(thumbnailSprite, thumbnailCenter, thumbnail.Zoom(), 0, thumbnail.GetFrame(step));
+		}
+		else if(thumbnailSprite->HasDimensions())
+			loadingCircle.Draw(thumbnailCenter);
+		// SpriteShader::Draw(thumbnail, thumbnailCenter, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
+	}
 
 	if(hasDescription)
 	{

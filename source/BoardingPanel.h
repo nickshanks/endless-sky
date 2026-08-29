@@ -18,6 +18,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Panel.h"
 
 #include "CaptureOdds.h"
+#include "LoadingCircle.h"
 #include "ScrollBar.h"
 
 #include <list>
@@ -146,6 +147,7 @@ private:
 	int selected = 0;
 	ScrollVar<double> scroll;
 	ScrollBar scrollBar;
+	LoadingCircle loadingCircle;
 
 	// Whether or not the ship can be captured.
 	bool canCapture = false;
