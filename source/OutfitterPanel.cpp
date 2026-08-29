@@ -304,25 +304,17 @@ double OutfitterPanel::DrawDetails(const Point &center)
 			collapsed.contains(DESCRIPTION));
 		selectedItem = selectedOutfit->DisplayName();
 
-		Drawable drawable = selectedOutfit->AnimatedThumbnail();
-		bool isAnimated = drawable.GetSprite() != nullptr;
-		float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
-		const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : selectedOutfit->Thumbnail();
-		float tileSize = thumbnail
-			? max(thumbnail->Height(), static_cast<float>(TileSize()))
+		const Drawable &thumbnail = selectedOutfit->Thumbnail();
+		const Sprite *thumbnailSprite = thumbnail.GetSprite();
+		const float tileSize = thumbnailSprite
+			? max(thumbnailSprite->Height(), static_cast<float>(TileSize()))
 			: static_cast<float>(TileSize());
 		const Point thumbnailCenter(center.X(), center.Y() + 20 + static_cast<int>(tileSize / 2));
 		const Point startPoint(center.X() - INFOBAR_WIDTH / 2 + 20, center.Y() + 20 + tileSize);
 
 		const Sprite *background = SpriteSet::Get("ui/outfitter unselected");
 		SpriteShader::Draw(background, thumbnailCenter);
-		if(thumbnail)
-		{
-			if(thumbnail->IsLoaded())
-				SpriteShader::Draw(thumbnail, thumbnailCenter, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
-			else if(thumbnail->HasDimensions())
-				loadingCircle.Draw(thumbnailCenter);
-		}
+		DrawThumbnail(thumbnail, true, thumbnailCenter);
 
 		const bool hasDescription = outfitInfo.DescriptionHeight();
 
@@ -453,7 +445,7 @@ ShopPanel::TransactionResult OutfitterPanel::CanMoveOutfit(OutfitLocation fromLo
 					for(const auto &[name, value] : selectedOutfit->Precise())
 						if(attributes.GetPrecise(name) < value)
 						{
-							for(const auto &outfit : ship->Outfits() | views::keys)
+							for(const auto &outfit : views::keys(ship->Outfits()))
 								if(outfit->GetPrecise(name) < 0)
 									errorDetails.emplace_back(string("the \"") + outfit->DisplayName() + "\" "
 										"depends on this outfit and must be uninstalled first");
@@ -1116,20 +1108,9 @@ bool OutfitterPanel::ShipCanRemove(const Ship *ship, const Outfit *outfit)
 
 void OutfitterPanel::DrawOutfit(const Outfit &outfit, const Point &center, bool isSelected, bool isOwned) const
 {
-	Drawable drawable = outfit.AnimatedThumbnail();
-	bool isAnimated = drawable.GetSprite() != nullptr;
-	float frame = isAnimated ? drawable.GetFrame(step) : 0.f;
-	const Sprite *thumbnail = isAnimated ? drawable.GetSprite() : outfit.Thumbnail();
-	const Sprite *back = SpriteSet::Get(
-		isSelected ? "ui/outfitter selected" : "ui/outfitter unselected");
+	const Sprite *back = SpriteSet::Get(isSelected ? "ui/outfitter selected" : "ui/outfitter unselected");
 	SpriteShader::Draw(back, center);
-	if(thumbnail)
-	{
-		if(thumbnail->IsLoaded())
-			SpriteShader::Draw(thumbnail, center, isAnimated ? drawable.Zoom() : 1.f, 0, frame);
-		else if(thumbnail->HasDimensions())
-			loadingCircle.Draw(center);
-	}
+	DrawThumbnail(outfit.Thumbnail(), true, center);
 
 	// Draw the outfit name.
 	const string &name = outfit.DisplayName();
