@@ -119,7 +119,7 @@ void MainPanel::Step()
 	if(isActive)
 		isActive = !ShowHelp(false);
 
-	engine.Step(isActive);
+	engine.Step(isActive, updateCurrentFrame);
 
 	if(isActive && !engine.IsPaused())
 		player.StepMissionTimers(GetUI());
@@ -132,7 +132,7 @@ void MainPanel::Step()
 	StepEvents(isActive);
 
 	if(isActive)
-		engine.Go();
+		engine.Go(updateNextFrame);
 	else
 		canDrag = false;
 	canClick = isActive;
@@ -189,6 +189,14 @@ void MainPanel::OnBribeCallback(const Government *bribed)
 bool MainPanel::AllowsFastForward() const noexcept
 {
 	return true;
+}
+
+
+
+void MainPanel::SetRenderUpdates(bool updateCurrentFrame, bool updateNextFrame) noexcept
+{
+	this->updateCurrentFrame = updateCurrentFrame;
+	this->updateNextFrame = updateNextFrame;
 }
 
 

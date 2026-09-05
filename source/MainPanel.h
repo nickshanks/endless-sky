@@ -45,6 +45,7 @@ public:
 
 	// The main panel allows fast-forward.
 	bool AllowsFastForward() const noexcept final;
+	void SetRenderUpdates(bool updateCurrentFrame, bool updateNextFrame) noexcept;
 
 	// Get the underlying game engine used by the game.
 	Engine &GetEngine();
@@ -88,4 +89,6 @@ private:
 	bool hasControl = false;
 	bool canClick = false;
 	bool canDrag = false;
+	bool updateCurrentFrame = true;
+	bool updateNextFrame = true;
 };

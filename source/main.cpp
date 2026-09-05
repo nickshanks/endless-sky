@@ -414,6 +414,7 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 		{
 			if(++step == 60)
 				step = 0;
+			int nextStep = (step == 59) ? 0 : step + 1;
 			if(toggleTimeout)
 				--toggleTimeout;
 			chrono::steady_clock::time_point start = chrono::steady_clock::now();
@@ -440,6 +441,11 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 			bool allowFastForward = !gamePanels.IsEmpty() && gamePanels.Top()->AllowsFastForward();
 			if(Preferences::Has("Interrupt fast-forward") && !inFlight && isFastForward && !allowFastForward)
 				isFastForward = false;
+			bool skipDraw = isFastForward && inFlight && step % 3;
+			bool skipNextDraw = isFastForward && inFlight && nextStep % 3;
+			MainPanel *mainPanel = static_cast<MainPanel *>(gamePanels.Root().get());
+			if(mainPanel)
+				mainPanel->SetRenderUpdates(!skipDraw, !skipNextDraw);
 
 			// Tell all the panels to step forward, then draw them.
 			((!isDebugPaused && menuPanels.IsEmpty()) ? gamePanels : menuPanels).StepAll();
@@ -462,7 +468,7 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 					timer.SetFrameRate(frameRate);
 				}
 
-				if(isFastForward && inFlight && step % 3)
+				if(skipDraw)
 				{
 					cpuLoadSum += chrono::steady_clock::now() - start;
 					continue;
@@ -479,7 +485,7 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 			// we should draw the game panels instead:
 			(menuPanels.IsEmpty() ? gamePanels : menuPanels).DrawAll();
 
-			MainPanel *mainPanel = static_cast<MainPanel *>(gamePanels.Root().get());
+			mainPanel = static_cast<MainPanel *>(gamePanels.Root().get());
 			if(mainPanel && mainPanel->GetEngine().IsPaused())
 				SpriteShader::Draw(SpriteSet::Get("ui/paused"), Screen::TopLeft() + Point(10., 10.));
 			else if(isFastForward)
