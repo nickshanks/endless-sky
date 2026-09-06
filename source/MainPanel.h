@@ -20,6 +20,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Command.h"
 #include "Engine.h"
 
+#include <chrono>
 #include <list>
 
 class PlayerInfo;
@@ -45,7 +46,8 @@ public:
 
 	// The main panel allows fast-forward.
 	bool AllowsFastForward() const noexcept final;
-	void SetRenderUpdates(bool updateCurrentFrame, bool updateNextFrame) noexcept;
+	std::chrono::steady_clock::duration CalculationTime() const noexcept;
+	std::chrono::steady_clock::duration CalculationWaitTime() const noexcept;
 
 	// Get the underlying game engine used by the game.
 	Engine &GetEngine();
@@ -89,6 +91,6 @@ private:
 	bool hasControl = false;
 	bool canClick = false;
 	bool canDrag = false;
-	bool updateCurrentFrame = true;
-	bool updateNextFrame = true;
+	std::chrono::steady_clock::duration calculationTime{};
+	std::chrono::steady_clock::duration calculationWaitTime{};
 };

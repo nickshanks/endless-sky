@@ -38,6 +38,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "TaskQueue.h"
 
 #include <condition_variable>
+#include <chrono>
 #include <list>
 #include <map>
 #include <memory>
@@ -79,9 +80,11 @@ public:
 	void Wait();
 	// Perform all the work that can only be done while the calculation thread
 	// is paused (for thread safety reasons).
-	void Step(bool isActive, bool updateVisuals = true);
+	void Step(bool isActive);
 	// Begin the next step of calculations.
-	void Go(bool updateVisuals = true);
+	void Go();
+	// Get how long the previous calculation step took.
+	std::chrono::steady_clock::duration CalculationTime() const noexcept;
 	// Whether the player has the game paused.
 	bool IsPaused() const;
 
@@ -285,7 +288,7 @@ private:
 	int step = 0;
 	// Count steps for UI elements separately, because they shouldn't be affected by pausing.
 	mutable int uiStep = 0;
-	bool updateVisuals = true;
+	std::chrono::steady_clock::duration calculationTime{};
 	bool timePaused = false;
 
 	std::list<ShipEvent> eventQueue;

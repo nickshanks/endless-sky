@@ -60,7 +60,10 @@ MainPanel::MainPanel(PlayerInfo &player)
 
 void MainPanel::Step()
 {
+	auto waitStart = chrono::steady_clock::now();
 	engine.Wait();
+	calculationWaitTime = chrono::steady_clock::now() - waitStart;
+	calculationTime = engine.CalculationTime();
 
 	// Depending on what UI element is on top, the game is "paused." This
 	// checks only already-drawn panels.
@@ -119,7 +122,7 @@ void MainPanel::Step()
 	if(isActive)
 		isActive = !ShowHelp(false);
 
-	engine.Step(isActive, updateCurrentFrame);
+	engine.Step(isActive);
 
 	if(isActive && !engine.IsPaused())
 		player.StepMissionTimers(GetUI());
@@ -132,7 +135,7 @@ void MainPanel::Step()
 	StepEvents(isActive);
 
 	if(isActive)
-		engine.Go(updateNextFrame);
+		engine.Go();
 	else
 		canDrag = false;
 	canClick = isActive;
@@ -193,10 +196,16 @@ bool MainPanel::AllowsFastForward() const noexcept
 
 
 
-void MainPanel::SetRenderUpdates(bool updateCurrentFrame, bool updateNextFrame) noexcept
+chrono::steady_clock::duration MainPanel::CalculationTime() const noexcept
 {
-	this->updateCurrentFrame = updateCurrentFrame;
-	this->updateNextFrame = updateNextFrame;
+	return calculationTime;
+}
+
+
+
+chrono::steady_clock::duration MainPanel::CalculationWaitTime() const noexcept
+{
+	return calculationWaitTime;
 }
 
 

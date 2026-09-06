@@ -503,9 +503,8 @@ void Engine::Wait()
 
 
 // Begin the next step of calculations.
-void Engine::Step(bool isActive, bool updateVisuals)
+void Engine::Step(bool isActive)
 {
-	this->updateVisuals = updateVisuals;
 	events.swap(eventQueue);
 	eventQueue.clear();
 
@@ -547,8 +546,7 @@ void Engine::Step(bool isActive, bool updateVisuals)
 			events.emplace_back(flagship, flagship, ShipEvent::JUMP);
 		}
 
-		if(updateVisuals)
-			minimap.Step(flagship);
+		minimap.Step(flagship);
 	}
 	else
 		// If there is no flagship, stop the camera.
@@ -728,9 +726,6 @@ void Engine::Step(bool isActive, bool updateVisuals)
 			}
 		}
 	}
-
-	if(!updateVisuals)
-		return;
 
 	targets.clear();
 
@@ -1178,13 +1173,23 @@ void Engine::Step(bool isActive, bool updateVisuals)
 
 
 // Begin the next step of calculations.
-void Engine::Go(bool updateVisuals)
+void Engine::Go()
 {
-	this->updateVisuals = updateVisuals;
 	if(!timePaused)
 		++step;
 	currentCalcBuffer = currentCalcBuffer ? 0 : 1;
-	queue.Run([this] { CalculateStep(); });
+	queue.Run([this] {
+		auto start = chrono::steady_clock::now();
+		CalculateStep();
+		calculationTime = chrono::steady_clock::now() - start;
+	});
+}
+
+
+
+chrono::steady_clock::duration Engine::CalculationTime() const noexcept
+{
+	return calculationTime;
 }
 
 
@@ -1691,9 +1696,6 @@ void Engine::CalculateStep()
 	}
 	else
 		CalculateUnpaused(flagship, playerSystem);
-
-	if(!updateVisuals)
-		return;
 
 	// Draw the objects. Start by figuring out where the view should be centered:
 	Camera newCamera = camera;
