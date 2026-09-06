@@ -19,6 +19,8 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Effect.h"
 #include "Random.h"
 
+#include <algorithm>
+
 using namespace std;
 
 
@@ -66,5 +68,22 @@ void Visual::Move()
 	{
 		position += velocity;
 		angle += spin;
+	}
+}
+
+
+
+void Visual::Move(int steps)
+{
+	if(lifetime <= 0)
+		MarkForRemoval();
+	else
+	{
+		int moveSteps = min(steps, lifetime);
+		position += moveSteps * velocity;
+		angle += Angle(moveSteps * spin.Degrees());
+		lifetime -= steps;
+		if(lifetime < 0)
+			MarkForRemoval();
 	}
 }

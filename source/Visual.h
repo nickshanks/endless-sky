@@ -42,6 +42,7 @@ public:
 
 	// Step the effect forward.
 	void Move();
+	void Move(int steps);
 
 
 private:

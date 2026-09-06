@@ -503,7 +503,7 @@ void Engine::Wait()
 
 
 // Begin the next step of calculations.
-void Engine::Step(bool isActive)
+void Engine::Step(bool isActive, bool updateUI)
 {
 	events.swap(eventQueue);
 	eventQueue.clear();
@@ -546,7 +546,8 @@ void Engine::Step(bool isActive)
 			events.emplace_back(flagship, flagship, ShipEvent::JUMP);
 		}
 
-		minimap.Step(flagship);
+		if(updateUI)
+			minimap.Step(flagship);
 	}
 	else
 		// If there is no flagship, stop the camera.
@@ -596,7 +597,8 @@ void Engine::Step(bool isActive)
 		}
 
 		// Step the background to account for the current velocity and zoom.
-		GameData::StepBackground(timePaused ? Point() : camera.Velocity(), zoom);
+		if(updateUI)
+			GameData::StepBackground(timePaused ? Point() : camera.Velocity(), zoom);
 	}
 
 	outlines.clear();
@@ -683,6 +685,52 @@ void Engine::Step(bool isActive)
 	}
 	else if(flash)
 		flash = max(0., flash * .99 - .002);
+
+	// Handle any events that change the selected ships.
+	if(groupSelect >= 0)
+	{
+		// This has to be done in Step() to avoid race conditions.
+		if(hasControl)
+			player.SetEscortGroup(groupSelect);
+		else
+			player.SelectEscortGroup(groupSelect, hasShift);
+		groupSelect = -1;
+	}
+	if(doClickNextStep)
+	{
+		// If a click command is issued, always wait until the next step to act
+		// on it, to avoid race conditions.
+		doClick = true;
+		doClickNextStep = false;
+	}
+	else
+		doClick = false;
+
+	if(doClick && mouseButton == MouseButton::LEFT)
+	{
+		if(uiClickBox.Dimensions())
+			doClick = !ammoDisplay.Click(uiClickBox);
+		else
+			doClick = !ammoDisplay.Click(clickPoint, hasControl);
+		doClick = doClick && !player.SelectEscorts(clickBox, hasShift);
+		if(doClick)
+		{
+			const vector<weak_ptr<Ship>> &stack = escorts.Click(clickPoint);
+			if(!stack.empty())
+			{
+				player.SelectShips(stack, hasShift);
+				doClick = false;
+			}
+			else
+			{
+				const Interface *hud = GameData::Interfaces().Get("hud");
+				clickPoint /= isRadarClick ? hud->GetValue("radar scale") : zoom;
+			}
+		}
+	}
+
+	if(!updateUI)
+		return;
 
 	targets.clear();
 
@@ -1058,49 +1106,6 @@ void Engine::Step(bool isActive)
 				1.f, Angle(pos).Degrees() + 180.);
 		}
 	}
-	// Handle any events that change the selected ships.
-	if(groupSelect >= 0)
-	{
-		// This has to be done in Step() to avoid race conditions.
-		if(hasControl)
-			player.SetEscortGroup(groupSelect);
-		else
-			player.SelectEscortGroup(groupSelect, hasShift);
-		groupSelect = -1;
-	}
-	if(doClickNextStep)
-	{
-		// If a click command is issued, always wait until the next step to act
-		// on it, to avoid race conditions.
-		doClick = true;
-		doClickNextStep = false;
-	}
-	else
-		doClick = false;
-
-	if(doClick && mouseButton == MouseButton::LEFT)
-	{
-		if(uiClickBox.Dimensions())
-			doClick = !ammoDisplay.Click(uiClickBox);
-		else
-			doClick = !ammoDisplay.Click(clickPoint, hasControl);
-		doClick = doClick && !player.SelectEscorts(clickBox, hasShift);
-		if(doClick)
-		{
-			const vector<weak_ptr<Ship>> &stack = escorts.Click(clickPoint);
-			if(!stack.empty())
-			{
-				player.SelectShips(stack, hasShift);
-				doClick = false;
-			}
-			else
-			{
-				const Interface *hud = GameData::Interfaces().Get("hud");
-				clickPoint /= isRadarClick ? hud->GetValue("radar scale") : zoom;
-			}
-		}
-	}
-
 	// Draw crosshairs on all the selected ships.
 	for(const weak_ptr<Ship> &selected : player.SelectedEscorts())
 	{
@@ -1173,12 +1178,24 @@ void Engine::Step(bool isActive)
 
 
 // Begin the next step of calculations.
-void Engine::Go()
+void Engine::Go(bool updateDraw)
 {
+	this->updateDraw = updateDraw;
 	if(!timePaused)
 		++step;
 	currentCalcBuffer = currentCalcBuffer ? 0 : 1;
-	queue.Run([this] { CalculateStep(); });
+	queue.Run([this] {
+		auto start = chrono::steady_clock::now();
+		CalculateStep();
+		calculationTime = chrono::steady_clock::now() - start;
+	});
+}
+
+
+
+chrono::steady_clock::duration Engine::CalculationTime() const noexcept
+{
+	return calculationTime;
 }
 
 
@@ -1624,6 +1641,7 @@ void Engine::EnterSystem()
 
 	projectiles.clear();
 	visuals.clear();
+	visualSkipSteps = 0;
 	flotsam.clear();
 	// Cancel any projectiles, visuals, or flotsam created by ships this step.
 	newProjectiles.clear();
@@ -1663,9 +1681,12 @@ void Engine::CalculateStep()
 	const double zoom = nextZoom ? nextZoom : this->zoom;
 
 	// Clear the list of objects to draw.
-	draw[currentCalcBuffer].Clear(step, zoom);
-	batchDraw[currentCalcBuffer].Clear(step, zoom);
-	radar[currentCalcBuffer].Clear();
+	if(updateDraw)
+	{
+		draw[currentCalcBuffer].Clear(step, zoom);
+		batchDraw[currentCalcBuffer].Clear(step, zoom);
+		radar[currentCalcBuffer].Clear();
+	}
 
 	if(!player.GetSystem())
 		return;
@@ -1685,6 +1706,9 @@ void Engine::CalculateStep()
 	}
 	else
 		CalculateUnpaused(flagship, playerSystem);
+
+	if(!updateDraw)
+		return;
 
 	// Draw the objects. Start by figuring out where the view should be centered:
 	Camera newCamera = camera;
@@ -1907,13 +1931,24 @@ void Engine::CalculateUnpaused(const Ship *flagship, const System *playerSystem)
 
 	// Step the weather.
 	for(Weather &weather : activeWeather)
-		weather.Step(newVisuals, flagship ? flagship->Position() : camera.Center());
+		weather.Step(newVisuals, flagship ? flagship->Position() : camera.Center(), updateDraw);
 	Prune(activeWeather);
 
 	// Move the visuals.
-	for(Visual &visual : visuals)
-		visual.Move();
-	Prune(visuals);
+	if(updateDraw)
+	{
+		int visualSteps = visualSkipSteps + 1;
+		if(visualSteps == 1)
+			for(Visual &visual : visuals)
+				visual.Move();
+		else
+			for(Visual &visual : visuals)
+				visual.Move(visualSteps);
+		Prune(visuals);
+		visualSkipSteps = 0;
+	}
+	else
+		++visualSkipSteps;
 
 	// Perform various minor actions.
 	SpawnFleets();

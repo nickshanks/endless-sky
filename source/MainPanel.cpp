@@ -60,7 +60,10 @@ MainPanel::MainPanel(PlayerInfo &player)
 
 void MainPanel::Step()
 {
+	auto waitStart = chrono::steady_clock::now();
 	engine.Wait();
+	calculationWaitTime = chrono::steady_clock::now() - waitStart;
+	calculationTime = engine.CalculationTime();
 
 	// Depending on what UI element is on top, the game is "paused." This
 	// checks only already-drawn panels.
@@ -119,7 +122,7 @@ void MainPanel::Step()
 	if(isActive)
 		isActive = !ShowHelp(false);
 
-	engine.Step(isActive);
+	engine.Step(isActive, updateUI);
 
 	if(isActive && !engine.IsPaused())
 		player.StepMissionTimers(GetUI());
@@ -132,7 +135,7 @@ void MainPanel::Step()
 	StepEvents(isActive);
 
 	if(isActive)
-		engine.Go();
+		engine.Go(updateEngineDraw);
 	else
 		canDrag = false;
 	canClick = isActive;
@@ -189,6 +192,34 @@ void MainPanel::OnBribeCallback(const Government *bribed)
 bool MainPanel::AllowsFastForward() const noexcept
 {
 	return true;
+}
+
+
+
+void MainPanel::SetUpdateUI(bool updateUI) noexcept
+{
+	this->updateUI = updateUI;
+}
+
+
+
+void MainPanel::SetUpdateEngineDraw(bool updateDraw) noexcept
+{
+	updateEngineDraw = updateDraw;
+}
+
+
+
+chrono::steady_clock::duration MainPanel::CalculationTime() const noexcept
+{
+	return calculationTime;
+}
+
+
+
+chrono::steady_clock::duration MainPanel::CalculationWaitTime() const noexcept
+{
+	return calculationWaitTime;
 }
 
 
