@@ -13,11 +13,19 @@ From the repository root:
 ./tests/performance/run_benchmarks_macos.sh ./build/macos-arm/Debug/endless-sky . fast-forward 3600 1
 ```
 
-Arguments are:
+`run_tests_macos.sh` arguments are:
 
 1. Path to the `endless-sky` executable.
 2. Path to the repository resources directory.
 3. Optional regular expression used to select tests from `--tests`.
+
+`run_benchmarks_macos.sh` arguments are:
+
+1. Path to the `endless-sky` executable.
+2. Path to the repository resources directory.
+3. Optional benchmark name.
+4. Optional baseline tick count.
+5. Optional random seed.
 
 `run_tests_macos.sh` emits TAP version 13 output and includes elapsed wall-clock
 time for each selected scenario as diagnostic lines. `run_benchmarks_macos.sh`
