@@ -82,7 +82,7 @@ public:
 	// is paused (for thread safety reasons).
 	void Step(bool isActive);
 	// Begin the next step of calculations.
-	void Go();
+	void Go(bool updateDraw = true);
 	// Get how long the previous calculation step took.
 	std::chrono::steady_clock::duration CalculationTime() const noexcept;
 	// Whether the player has the game paused.
@@ -288,6 +288,7 @@ private:
 	int step = 0;
 	// Count steps for UI elements separately, because they shouldn't be affected by pausing.
 	mutable int uiStep = 0;
+	bool updateDraw = true;
 	std::chrono::steady_clock::duration calculationTime{};
 	bool timePaused = false;
 

@@ -414,6 +414,7 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 		{
 			if(++step == 60)
 				step = 0;
+			int nextStep = (step == 59) ? 0 : step + 1;
 			if(toggleTimeout)
 				--toggleTimeout;
 			chrono::steady_clock::time_point start = chrono::steady_clock::now();
@@ -441,7 +442,10 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 			if(Preferences::Has("Interrupt fast-forward") && !inFlight && isFastForward && !allowFastForward)
 				isFastForward = false;
 			bool skipDraw = isFastForward && inFlight && step % 3;
+			bool skipNextDraw = isFastForward && inFlight && nextStep % 3;
 			MainPanel *mainPanel = static_cast<MainPanel *>(gamePanels.Root().get());
+			if(mainPanel)
+				mainPanel->SetUpdateEngineDraw(!skipNextDraw);
 
 			// Tell all the panels to step forward, then draw them.
 			((!isDebugPaused && menuPanels.IsEmpty()) ? gamePanels : menuPanels).StepAll();

@@ -1173,8 +1173,9 @@ void Engine::Step(bool isActive)
 
 
 // Begin the next step of calculations.
-void Engine::Go()
+void Engine::Go(bool updateDraw)
 {
+	this->updateDraw = updateDraw;
 	if(!timePaused)
 		++step;
 	currentCalcBuffer = currentCalcBuffer ? 0 : 1;
@@ -1674,9 +1675,12 @@ void Engine::CalculateStep()
 	const double zoom = nextZoom ? nextZoom : this->zoom;
 
 	// Clear the list of objects to draw.
-	draw[currentCalcBuffer].Clear(step, zoom);
-	batchDraw[currentCalcBuffer].Clear(step, zoom);
-	radar[currentCalcBuffer].Clear();
+	if(updateDraw)
+	{
+		draw[currentCalcBuffer].Clear(step, zoom);
+		batchDraw[currentCalcBuffer].Clear(step, zoom);
+		radar[currentCalcBuffer].Clear();
+	}
 
 	if(!player.GetSystem())
 		return;
@@ -1696,6 +1700,9 @@ void Engine::CalculateStep()
 	}
 	else
 		CalculateUnpaused(flagship, playerSystem);
+
+	if(!updateDraw)
+		return;
 
 	// Draw the objects. Start by figuring out where the view should be centered:
 	Camera newCamera = camera;

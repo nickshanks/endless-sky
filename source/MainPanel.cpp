@@ -135,7 +135,7 @@ void MainPanel::Step()
 	StepEvents(isActive);
 
 	if(isActive)
-		engine.Go();
+		engine.Go(updateEngineDraw);
 	else
 		canDrag = false;
 	canClick = isActive;
@@ -192,6 +192,13 @@ void MainPanel::OnBribeCallback(const Government *bribed)
 bool MainPanel::AllowsFastForward() const noexcept
 {
 	return true;
+}
+
+
+
+void MainPanel::SetUpdateEngineDraw(bool updateDraw) noexcept
+{
+	updateEngineDraw = updateDraw;
 }
 
 
