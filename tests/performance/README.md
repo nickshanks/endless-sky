@@ -10,7 +10,7 @@ From the repository root:
 
 ```sh
 ./tests/performance/run_tests_macos.sh ./build/macos-arm/Release/endless-sky . "Afterburner-flight"
-./tests/performance/run_benchmarks_macos.sh ./build/macos-arm/Release/endless-sky . fast-forward 3600 1
+./tests/performance/run_benchmarks_macos.sh ./build/macos-arm/Release/endless-sky . fast-forward 3600 1 5 1
 ```
 
 `run_tests_macos.sh` arguments are:
@@ -26,15 +26,18 @@ From the repository root:
 3. Optional benchmark name.
 4. Optional baseline tick count.
 5. Optional random seed.
+6. Optional measured repeat count.
+7. Optional unmeasured warmup count.
 
 `run_tests_macos.sh` emits TAP version 13 output and includes elapsed wall-clock
 time for each selected scenario as diagnostic lines. `run_benchmarks_macos.sh`
 runs in-process headless benchmarks and prints JSON metrics.
 
 `run_benchmarks_macos.sh` accepts optional benchmark name, tick count, and random
-seed arguments. It defaults to `fast-forward`, `3600`, and seed `1`. The
-benchmark resets the random seed before each measured sub-run so the normal and
-fast-forward paths begin from the same random stream.
+seed, repeat count, and warmup count arguments. It defaults to `fast-forward`,
+`3600`, seed `1`, `5` measured repeats, and `1` unmeasured warmup. The benchmark
+resets the random seed before each sub-run so the normal and fast-forward paths
+begin from the same random stream.
 
 Both scripts set `MallocNanoZone=0` to suppress macOS's harmless `nano zone
 abandoned due to inability to reserve vm space` allocator warning. That warning
@@ -52,7 +55,9 @@ save, launches from Earth, and measures serialized engine ticks in two modes:
 normal ticks with draw preparation every tick, a same-simulated-duration normal
 run, and fast-forward ticks with draw preparation every third tick. It reports
 simulated ticks, draw-preparation ticks, wall time, engine calculation time, wait
-time, and ticks per second.
+time, and ticks per second. The JSON output includes every sample plus best and
+median summaries for each mode, and ratios comparing fast-forward throughput to
+the same-simulated-duration normal run.
 
 Use Release builds for meaningful comparisons. Debug and sanitizer builds are
 useful for validating that the harness runs, but they heavily distort absolute

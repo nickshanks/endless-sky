@@ -2,10 +2,10 @@
 set -euo pipefail
 
 function usage() {
-	echo "Usage: $0 <endless-sky-executable> <resources-path> [benchmark-name] [benchmark-ticks] [seed]"
+	echo "Usage: $0 <endless-sky-executable> <resources-path> [benchmark-name] [benchmark-ticks] [seed] [repeats] [warmups]"
 }
 
-if [ $# -lt 2 ] || [ $# -gt 5 ]; then
+if [ $# -lt 2 ] || [ $# -gt 7 ]; then
 	usage
 	exit 1
 fi
@@ -15,6 +15,8 @@ RESOURCES="$2"
 BENCHMARK_NAME="${3:-fast-forward}"
 BENCHMARK_TICKS="${4:-3600}"
 BENCHMARK_SEED="${5:-1}"
+BENCHMARK_REPEATS="${6:-5}"
+BENCHMARK_WARMUPS="${7:-1}"
 ES_CONFIG_TEMPLATE_PATH="${RESOURCES}/tests/integration/config"
 export MallocNanoZone=0
 
@@ -38,4 +40,6 @@ cp -R "${ES_CONFIG_TEMPLATE_PATH}/." "${TEST_CONFIG}"
 	--config "${TEST_CONFIG}" \
 	--benchmark "${BENCHMARK_NAME}" \
 	--benchmark-ticks "${BENCHMARK_TICKS}" \
-	--benchmark-seed "${BENCHMARK_SEED}"
+	--benchmark-seed "${BENCHMARK_SEED}" \
+	--benchmark-repeats "${BENCHMARK_REPEATS}" \
+	--benchmark-warmups "${BENCHMARK_WARMUPS}"

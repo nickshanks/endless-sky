@@ -57,6 +57,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "windows/WinVersion.h"
 #endif
 
+#include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -66,6 +67,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <future>
 #include <exception>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #define STRICT
@@ -88,7 +90,8 @@ using namespace std;
 
 void PrintHelp();
 void PrintVersion();
-int RunBenchmark(PlayerInfo &player, const std::string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed);
+int RunBenchmark(PlayerInfo &player, const std::string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed,
+	int benchmarkRepeats, int benchmarkWarmups);
 void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversation,
 	const string &testToRun, bool debugMode);
 Conversation LoadConversation(const PlayerInfo &player);
@@ -118,6 +121,8 @@ int main(int argc, char *argv[])
 	string benchmarkName;
 	int benchmarkTicks = 3600;
 	uint64_t benchmarkSeed = 1;
+	int benchmarkRepeats = 5;
+	int benchmarkWarmups = 1;
 
 	// Whether the game has encountered errors while loading.
 	bool hasErrors = false;
@@ -157,6 +162,10 @@ int main(int argc, char *argv[])
 			benchmarkTicks = stoi(*it);
 		else if(arg == "--benchmark-seed" && *++it)
 			benchmarkSeed = stoull(*it);
+		else if(arg == "--benchmark-repeats" && *++it)
+			benchmarkRepeats = stoi(*it);
+		else if(arg == "--benchmark-warmups" && *++it)
+			benchmarkWarmups = stoi(*it);
 		else if(arg == "--tests")
 			printTests = true;
 		else if(arg == "--nomute")
@@ -177,7 +186,7 @@ int main(int argc, char *argv[])
 	const bool isBenchmark = !benchmarkName.empty();
 	bool isConsoleOnly = loadOnly || printTests || printData;
 
-	Logger::Session logSession{isConsoleOnly || isTesting};
+	Logger::Session logSession{isConsoleOnly || isTesting || isBenchmark};
 
 	try {
 		// Load plugin settings and preferences before game data.
@@ -221,7 +230,8 @@ int main(int argc, char *argv[])
 			Audio::SetVolume(0, SoundCategory::MASTER);
 			CustomEvents::Init();
 
-			int result = RunBenchmark(player, benchmarkName, benchmarkTicks, benchmarkSeed);
+			int result = RunBenchmark(player, benchmarkName, benchmarkTicks, benchmarkSeed,
+				benchmarkRepeats, benchmarkWarmups);
 			Audio::Quit();
 			GameWindow::Quit();
 			return result;
@@ -318,12 +328,17 @@ int main(int argc, char *argv[])
 
 
 
-int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed)
+int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed,
+	int benchmarkRepeats, int benchmarkWarmups)
 {
 	if(benchmarkName != "fast-forward")
 		throw runtime_error("Unknown benchmark \"" + benchmarkName + "\".");
 	if(benchmarkTicks <= 0)
 		throw runtime_error("Benchmark tick count must be positive.");
+	if(benchmarkRepeats <= 0)
+		throw runtime_error("Benchmark repeat count must be positive.");
+	if(benchmarkWarmups < 0)
+		throw runtime_error("Benchmark warmup count must not be negative.");
 
 	const string saveName = "Three Earthly Barges Save";
 	const TestData *testData = GameData::TestDataSets().Get(saveName);
@@ -337,6 +352,12 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 		chrono::steady_clock::duration wallTime{};
 		chrono::steady_clock::duration engineTime{};
 		chrono::steady_clock::duration waitTime{};
+	};
+	class Scenario {
+	public:
+		int ticks = 0;
+		bool fastForward = false;
+		vector<Result> samples;
 	};
 
 	auto RunScenario = [&](int ticks, bool fastForward) {
@@ -370,9 +391,22 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 		return result;
 	};
 
-	Result normal = RunScenario(benchmarkTicks, false);
-	Result normalSameTicks = RunScenario(benchmarkTicks * 3, false);
-	Result fastForward = RunScenario(benchmarkTicks * 3, true);
+	for(int i = 0; i < benchmarkWarmups; ++i)
+	{
+		RunScenario(benchmarkTicks, false);
+		RunScenario(benchmarkTicks * 3, false);
+		RunScenario(benchmarkTicks * 3, true);
+	}
+
+	Scenario normal{benchmarkTicks, false};
+	Scenario normalSameTicks{benchmarkTicks * 3, false};
+	Scenario fastForward{benchmarkTicks * 3, true};
+	for(int i = 0; i < benchmarkRepeats; ++i)
+	{
+		normal.samples.push_back(RunScenario(normal.ticks, normal.fastForward));
+		normalSameTicks.samples.push_back(RunScenario(normalSameTicks.ticks, normalSameTicks.fastForward));
+		fastForward.samples.push_back(RunScenario(fastForward.ticks, fastForward.fastForward));
+	}
 
 	auto Milliseconds = [](chrono::steady_clock::duration duration) {
 		return chrono::duration<double, milli>(duration).count();
@@ -380,15 +414,45 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 	auto TicksPerSecond = [&](const Result &result) {
 		return result.ticks / chrono::duration<double>(result.wallTime).count();
 	};
-	auto PrintResult = [&](const string &name, const Result &result, bool trailingComma) {
+	auto Better = [&](const Result &left, const Result &right) {
+		return TicksPerSecond(left) < TicksPerSecond(right);
+	};
+	auto Best = [&](const vector<Result> &samples) -> const Result & {
+		return *max_element(samples.begin(), samples.end(), Better);
+	};
+	auto Median = [&](vector<Result> samples) {
+		sort(samples.begin(), samples.end(), Better);
+		return samples[samples.size() / 2];
+	};
+	auto PrintSample = [&](const Result &result, const string &indent, bool trailingComma) {
+		cout << indent << "{\n";
+		cout << indent << "  \"ticks\": " << result.ticks << ",\n";
+		cout << indent << "  \"drawPrepTicks\": " << result.drawPrepTicks << ",\n";
+		cout << indent << "  \"wallMs\": " << Milliseconds(result.wallTime) << ",\n";
+		cout << indent << "  \"engineMs\": " << Milliseconds(result.engineTime) << ",\n";
+		cout << indent << "  \"waitMs\": " << Milliseconds(result.waitTime) << ",\n";
+		cout << indent << "  \"ticksPerSecond\": " << TicksPerSecond(result) << "\n";
+		cout << indent << "}" << (trailingComma ? "," : "") << "\n";
+	};
+	auto PrintScenario = [&](const string &name, const Scenario &scenario, bool trailingComma) {
 		cout << "  \"" << name << "\": {\n";
-		cout << "    \"ticks\": " << result.ticks << ",\n";
-		cout << "    \"drawPrepTicks\": " << result.drawPrepTicks << ",\n";
-		cout << "    \"wallMs\": " << Milliseconds(result.wallTime) << ",\n";
-		cout << "    \"engineMs\": " << Milliseconds(result.engineTime) << ",\n";
-		cout << "    \"waitMs\": " << Milliseconds(result.waitTime) << ",\n";
-		cout << "    \"ticksPerSecond\": " << TicksPerSecond(result) << "\n";
+		cout << "    \"best\":\n";
+		PrintSample(Best(scenario.samples), "      ", true);
+		cout << "    \"median\":\n";
+		PrintSample(Median(scenario.samples), "      ", true);
+		cout << "    \"samples\": [\n";
+		for(size_t i = 0; i < scenario.samples.size(); ++i)
+			PrintSample(scenario.samples[i], "      ", i + 1 < scenario.samples.size());
+		cout << "    ]\n";
 		cout << "  }" << (trailingComma ? "," : "") << "\n";
+	};
+	auto PrintComparison = [&]() {
+		cout << "  \"comparison\": {\n";
+		cout << "    \"fastForwardToNormalSameTicksBest\": "
+			<< TicksPerSecond(Best(fastForward.samples)) / TicksPerSecond(Best(normalSameTicks.samples)) << ",\n";
+		cout << "    \"fastForwardToNormalSameTicksMedian\": "
+			<< TicksPerSecond(Median(fastForward.samples)) / TicksPerSecond(Median(normalSameTicks.samples)) << "\n";
+		cout << "  }\n";
 	};
 
 	cout << fixed << setprecision(3);
@@ -397,9 +461,12 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 	cout << "  \"scenario\": \"" << saveName << "\",\n";
 	cout << "  \"seed\": " << benchmarkSeed << ",\n";
 	cout << "  \"baseTicks\": " << benchmarkTicks << ",\n";
-	PrintResult("normal", normal, true);
-	PrintResult("normalSameTicks", normalSameTicks, true);
-	PrintResult("fastForward", fastForward, false);
+	cout << "  \"warmups\": " << benchmarkWarmups << ",\n";
+	cout << "  \"repeats\": " << benchmarkRepeats << ",\n";
+	PrintScenario("normal", normal, true);
+	PrintScenario("normalSameTicks", normalSameTicks, true);
+	PrintScenario("fastForward", fastForward, true);
+	PrintComparison();
 	cout << "}\n";
 
 	return 0;
@@ -769,6 +836,8 @@ void PrintHelp()
 	cerr << "    --benchmark <name>: run a headless benchmark and print JSON metrics." << endl;
 	cerr << "    --benchmark-ticks <number>: sets the baseline tick count for --benchmark." << endl;
 	cerr << "    --benchmark-seed <seed>: sets the pseudo-random seed for --benchmark." << endl;
+	cerr << "    --benchmark-repeats <number>: sets the measured repeat count for --benchmark." << endl;
+	cerr << "    --benchmark-warmups <number>: sets the unmeasured warmup count for --benchmark." << endl;
 	cerr << "    --nomute: don't mute the game while running tests." << endl;
 	cerr << "    --rng-seed <seed>: every time the pseudo-random number generator is seeded,"
 		" it will be given this value." << endl;
