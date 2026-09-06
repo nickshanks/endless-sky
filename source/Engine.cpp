@@ -503,7 +503,7 @@ void Engine::Wait()
 
 
 // Begin the next step of calculations.
-void Engine::Step(bool isActive)
+void Engine::Step(bool isActive, bool updateUI)
 {
 	events.swap(eventQueue);
 	eventQueue.clear();
@@ -546,7 +546,8 @@ void Engine::Step(bool isActive)
 			events.emplace_back(flagship, flagship, ShipEvent::JUMP);
 		}
 
-		minimap.Step(flagship);
+		if(updateUI)
+			minimap.Step(flagship);
 	}
 	else
 		// If there is no flagship, stop the camera.
@@ -596,7 +597,8 @@ void Engine::Step(bool isActive)
 		}
 
 		// Step the background to account for the current velocity and zoom.
-		GameData::StepBackground(timePaused ? Point() : camera.Velocity(), zoom);
+		if(updateUI)
+			GameData::StepBackground(timePaused ? Point() : camera.Velocity(), zoom);
 	}
 
 	outlines.clear();
@@ -726,6 +728,9 @@ void Engine::Step(bool isActive)
 			}
 		}
 	}
+
+	if(!updateUI)
+		return;
 
 	targets.clear();
 

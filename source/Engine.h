@@ -80,7 +80,7 @@ public:
 	void Wait();
 	// Perform all the work that can only be done while the calculation thread
 	// is paused (for thread safety reasons).
-	void Step(bool isActive);
+	void Step(bool isActive, bool updateUI = true);
 	// Begin the next step of calculations.
 	void Go(bool updateDraw = true);
 	// Get how long the previous calculation step took.

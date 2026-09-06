@@ -122,7 +122,7 @@ void MainPanel::Step()
 	if(isActive)
 		isActive = !ShowHelp(false);
 
-	engine.Step(isActive);
+	engine.Step(isActive, updateUI);
 
 	if(isActive && !engine.IsPaused())
 		player.StepMissionTimers(GetUI());
@@ -192,6 +192,13 @@ void MainPanel::OnBribeCallback(const Government *bribed)
 bool MainPanel::AllowsFastForward() const noexcept
 {
 	return true;
+}
+
+
+
+void MainPanel::SetUpdateUI(bool updateUI) noexcept
+{
+	this->updateUI = updateUI;
 }
 
 

@@ -380,7 +380,7 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 			result.drawPrepTicks += updateDraw;
 
 			auto tickStart = chrono::steady_clock::now();
-			engine.Step(true);
+			engine.Step(true, updateDraw);
 			engine.Go(updateDraw);
 			auto waitStart = chrono::steady_clock::now();
 			engine.Wait();
@@ -630,7 +630,10 @@ void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversa
 			bool skipNextDraw = isFastForward && inFlight && nextStep % 3;
 			MainPanel *mainPanel = static_cast<MainPanel *>(gamePanels.Root().get());
 			if(mainPanel)
+			{
+				mainPanel->SetUpdateUI(!skipDraw);
 				mainPanel->SetUpdateEngineDraw(!skipNextDraw);
+			}
 
 			// Tell all the panels to step forward, then draw them.
 			((!isDebugPaused && menuPanels.IsEmpty()) ? gamePanels : menuPanels).StepAll();

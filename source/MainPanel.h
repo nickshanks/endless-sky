@@ -46,6 +46,7 @@ public:
 
 	// The main panel allows fast-forward.
 	bool AllowsFastForward() const noexcept final;
+	void SetUpdateUI(bool updateUI) noexcept;
 	void SetUpdateEngineDraw(bool updateDraw) noexcept;
 	std::chrono::steady_clock::duration CalculationTime() const noexcept;
 	std::chrono::steady_clock::duration CalculationWaitTime() const noexcept;
@@ -92,6 +93,7 @@ private:
 	bool hasControl = false;
 	bool canClick = false;
 	bool canDrag = false;
+	bool updateUI = true;
 	bool updateEngineDraw = true;
 	std::chrono::steady_clock::duration calculationTime{};
 	std::chrono::steady_clock::duration calculationWaitTime{};
