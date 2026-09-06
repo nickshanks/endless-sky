@@ -32,7 +32,9 @@ time for each selected scenario as diagnostic lines. `run_benchmarks_macos.sh`
 runs in-process headless benchmarks and prints JSON metrics.
 
 `run_benchmarks_macos.sh` accepts optional benchmark name, tick count, and random
-seed arguments. It defaults to `fast-forward`, `3600`, and seed `1`.
+seed arguments. It defaults to `fast-forward`, `3600`, and seed `1`. The
+benchmark resets the random seed before each measured sub-run so the normal and
+fast-forward paths begin from the same random stream.
 
 Both scripts set `MallocNanoZone=0` to suppress macOS's harmless `nano zone
 abandoned due to inability to reserve vm space` allocator warning. That warning

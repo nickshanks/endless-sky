@@ -324,7 +324,6 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 		throw runtime_error("Unknown benchmark \"" + benchmarkName + "\".");
 	if(benchmarkTicks <= 0)
 		throw runtime_error("Benchmark tick count must be positive.");
-	Random::SetFixedSeed(benchmarkSeed);
 
 	const string saveName = "Three Earthly Barges Save";
 	const TestData *testData = GameData::TestDataSets().Get(saveName);
@@ -341,6 +340,7 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 	};
 
 	auto RunScenario = [&](int ticks, bool fastForward) {
+		Random::SetFixedSeed(benchmarkSeed);
 		GameData::Revert();
 		player.Load(Files::Saves() / (saveName + ".txt"), PilotProfile::GetProfile(saveName));
 
