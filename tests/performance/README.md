@@ -10,6 +10,7 @@ From the repository root:
 
 ```sh
 ./tests/performance/run_tests_macos.sh ./build/macos-arm/Debug/endless-sky . "Afterburner-flight"
+./tests/performance/run_benchmarks_macos.sh ./build/macos-arm/Debug/endless-sky . fast-forward 3600 1
 ```
 
 Arguments are:
@@ -18,16 +19,31 @@ Arguments are:
 2. Path to the repository resources directory.
 3. Optional regular expression used to select tests from `--tests`.
 
-The script emits TAP version 13 output and includes elapsed wall-clock time for
-each selected scenario as diagnostic lines.
+`run_tests_macos.sh` emits TAP version 13 output and includes elapsed wall-clock
+time for each selected scenario as diagnostic lines. `run_benchmarks_macos.sh`
+runs in-process headless benchmarks and prints JSON metrics.
+
+`run_benchmarks_macos.sh` accepts optional benchmark name, tick count, and random
+seed arguments. It defaults to `fast-forward`, `3600`, and seed `1`.
+
+Both scripts set `MallocNanoZone=0` to suppress macOS's harmless `nano zone
+abandoned due to inability to reserve vm space` allocator warning. That warning
+is emitted by Darwin's malloc implementation before the game starts doing useful
+work; it is not a game bug.
 
 ## Current Scope
 
-This is a prerequisite harness, not a stable benchmark suite yet. It measures the
-whole process run for each selected integration scenario, including data loading
-and test setup. That is useful for proving that command-line playable scenarios
-can run on macOS, but it is not yet precise enough to gate engine tick
-performance.
+This is an early local harness, not a stable benchmark suite yet. The scenario
+runner measures the whole process run for each selected integration scenario,
+including data loading and test setup.
 
-Future benchmark-specific tests should report in-process metrics such as engine
-calculation time, draw-preparation time, simulated ticks, and ticks per second.
+The `fast-forward` benchmark injects the `Three Earthly Barges Save` integration
+save, launches from Earth, and measures serialized engine ticks in two modes:
+normal ticks with draw preparation every tick, a same-simulated-duration normal
+run, and fast-forward ticks with draw preparation every third tick. It reports
+simulated ticks, draw-preparation ticks, wall time, engine calculation time, wait
+time, and ticks per second.
+
+Use Release builds for meaningful comparisons. Debug and sanitizer builds are
+useful for validating that the harness runs, but they heavily distort absolute
+performance.

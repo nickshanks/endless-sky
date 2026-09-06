@@ -22,6 +22,7 @@ ES_EXEC_PATH="$1"
 RESOURCES="$2"
 TEST_FILTER="${3:-.}"
 ES_CONFIG_TEMPLATE_PATH="${RESOURCES}/tests/integration/config"
+export MallocNanoZone=0
 
 echo "TAP version 13"
 echo "# Endless Sky macOS performance scenario runner"

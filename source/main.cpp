@@ -36,6 +36,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "MainPanel.h"
 #include "MenuPanel.h"
 #include "Panel.h"
+#include "PilotProfile.h"
 #include "PlayerInfo.h"
 #include "PluginManager.h"
 #include "Preferences.h"
@@ -47,6 +48,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "TaskQueue.h"
 #include "test/Test.h"
 #include "test/TestContext.h"
+#include "test/TestData.h"
 #include "UI.h"
 
 #ifdef _WIN32
@@ -56,6 +58,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #endif
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <map>
 
@@ -85,6 +88,7 @@ using namespace std;
 
 void PrintHelp();
 void PrintVersion();
+int RunBenchmark(PlayerInfo &player, const std::string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed);
 void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversation,
 	const string &testToRun, bool debugMode);
 Conversation LoadConversation(const PlayerInfo &player);
@@ -111,6 +115,9 @@ int main(int argc, char *argv[])
 	bool noTestMute = false;
 	uint64_t nWorkerThreads = 0;
 	string testToRunName;
+	string benchmarkName;
+	int benchmarkTicks = 3600;
+	uint64_t benchmarkSeed = 1;
 
 	// Whether the game has encountered errors while loading.
 	bool hasErrors = false;
@@ -144,6 +151,12 @@ int main(int argc, char *argv[])
 			checkAssets = true;
 		else if(arg == "--test" && *++it)
 			testToRunName = *it;
+		else if(arg == "--benchmark" && *++it)
+			benchmarkName = *it;
+		else if(arg == "--benchmark-ticks" && *++it)
+			benchmarkTicks = stoi(*it);
+		else if(arg == "--benchmark-seed" && *++it)
+			benchmarkSeed = stoull(*it);
 		else if(arg == "--tests")
 			printTests = true;
 		else if(arg == "--nomute")
@@ -161,6 +174,7 @@ int main(int argc, char *argv[])
 
 	// Whether we are running an integration test.
 	const bool isTesting = !testToRunName.empty();
+	const bool isBenchmark = !benchmarkName.empty();
 	bool isConsoleOnly = loadOnly || printTests || printData;
 
 	Logger::Session logSession{isConsoleOnly || isTesting};
@@ -174,11 +188,11 @@ int main(int argc, char *argv[])
 
 		// Begin loading the game data.
 		auto dataFuture = GameData::BeginLoad(queue, player, isConsoleOnly, debugMode,
-			isConsoleOnly || checkAssets || (isTesting && !debugMode));
+			isConsoleOnly || checkAssets || ((isTesting || isBenchmark) && !debugMode));
 
 		// If we are not using the UI, or performing some automated task, we should load
 		// all data now.
-		if(isConsoleOnly || checkAssets || isTesting)
+		if(isConsoleOnly || checkAssets || isTesting || isBenchmark)
 			dataFuture.wait();
 
 		if(isTesting && !GameData::Tests().Has(testToRunName))
@@ -196,6 +210,21 @@ int main(int argc, char *argv[])
 		{
 			PrintTestsTable();
 			return 0;
+		}
+		if(isBenchmark)
+		{
+			GameData::FinishLoading();
+			if(!GameWindow::Init(true))
+				return 1;
+			GameData::LoadSettings();
+			Audio::Init(GameData::Sources());
+			Audio::SetVolume(0, SoundCategory::MASTER);
+			CustomEvents::Init();
+
+			int result = RunBenchmark(player, benchmarkName, benchmarkTicks, benchmarkSeed);
+			Audio::Quit();
+			GameWindow::Quit();
+			return result;
 		}
 
 		if(loadOnly || checkAssets)
@@ -270,7 +299,7 @@ int main(int argc, char *argv[])
 	catch(const exception &error)
 	{
 		Audio::Quit();
-		GameWindow::ExitWithError(error.what(), !isTesting);
+		GameWindow::ExitWithError(error.what(), !isTesting && !isBenchmark);
 		return 1;
 	}
 
@@ -283,6 +312,95 @@ int main(int argc, char *argv[])
 
 	Audio::Quit();
 	GameWindow::Quit();
+
+	return 0;
+}
+
+
+
+int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed)
+{
+	if(benchmarkName != "fast-forward")
+		throw runtime_error("Unknown benchmark \"" + benchmarkName + "\".");
+	if(benchmarkTicks <= 0)
+		throw runtime_error("Benchmark tick count must be positive.");
+	Random::SetFixedSeed(benchmarkSeed);
+
+	const string saveName = "Three Earthly Barges Save";
+	const TestData *testData = GameData::TestDataSets().Get(saveName);
+	if(!testData->Inject(nullptr, nullptr, nullptr))
+		throw runtime_error("Unable to inject benchmark save \"" + saveName + "\".");
+
+	class Result {
+	public:
+		int ticks = 0;
+		int drawPrepTicks = 0;
+		chrono::steady_clock::duration wallTime{};
+		chrono::steady_clock::duration engineTime{};
+		chrono::steady_clock::duration waitTime{};
+	};
+
+	auto RunScenario = [&](int ticks, bool fastForward) {
+		GameData::Revert();
+		player.Load(Files::Saves() / (saveName + ".txt"), PilotProfile::GetProfile(saveName));
+
+		UI ui;
+		if(!player.TakeOff(ui, true))
+			throw runtime_error("Unable to launch benchmark save \"" + saveName + "\".");
+
+		Engine engine(player);
+		engine.Place();
+
+		Result result;
+		result.ticks = ticks;
+		for(int i = 0; i < ticks; ++i)
+		{
+			const bool updateDraw = !fastForward || !((i + 1) % 3);
+			result.drawPrepTicks += updateDraw;
+
+			auto tickStart = chrono::steady_clock::now();
+			engine.Step(true);
+			engine.Go(updateDraw);
+			auto waitStart = chrono::steady_clock::now();
+			engine.Wait();
+			result.waitTime += chrono::steady_clock::now() - waitStart;
+			result.engineTime += engine.CalculationTime();
+			result.wallTime += chrono::steady_clock::now() - tickStart;
+		}
+		return result;
+	};
+
+	Result normal = RunScenario(benchmarkTicks, false);
+	Result normalSameTicks = RunScenario(benchmarkTicks * 3, false);
+	Result fastForward = RunScenario(benchmarkTicks * 3, true);
+
+	auto Milliseconds = [](chrono::steady_clock::duration duration) {
+		return chrono::duration<double, milli>(duration).count();
+	};
+	auto TicksPerSecond = [&](const Result &result) {
+		return result.ticks / chrono::duration<double>(result.wallTime).count();
+	};
+	auto PrintResult = [&](const string &name, const Result &result, bool trailingComma) {
+		cout << "  \"" << name << "\": {\n";
+		cout << "    \"ticks\": " << result.ticks << ",\n";
+		cout << "    \"drawPrepTicks\": " << result.drawPrepTicks << ",\n";
+		cout << "    \"wallMs\": " << Milliseconds(result.wallTime) << ",\n";
+		cout << "    \"engineMs\": " << Milliseconds(result.engineTime) << ",\n";
+		cout << "    \"waitMs\": " << Milliseconds(result.waitTime) << ",\n";
+		cout << "    \"ticksPerSecond\": " << TicksPerSecond(result) << "\n";
+		cout << "  }" << (trailingComma ? "," : "") << "\n";
+	};
+
+	cout << fixed << setprecision(3);
+	cout << "{\n";
+	cout << "  \"benchmark\": \"" << benchmarkName << "\",\n";
+	cout << "  \"scenario\": \"" << saveName << "\",\n";
+	cout << "  \"seed\": " << benchmarkSeed << ",\n";
+	cout << "  \"baseTicks\": " << benchmarkTicks << ",\n";
+	PrintResult("normal", normal, true);
+	PrintResult("normalSameTicks", normalSameTicks, true);
+	PrintResult("fastForward", fastForward, false);
+	cout << "}\n";
 
 	return 0;
 }
@@ -648,6 +766,9 @@ void PrintHelp()
 		" and the latest save game, and inspect data for errors." << endl;
 	cerr << "    --tests: print table of available tests, then exit." << endl;
 	cerr << "    --test <name>: run given test from resources directory." << endl;
+	cerr << "    --benchmark <name>: run a headless benchmark and print JSON metrics." << endl;
+	cerr << "    --benchmark-ticks <number>: sets the baseline tick count for --benchmark." << endl;
+	cerr << "    --benchmark-seed <seed>: sets the pseudo-random seed for --benchmark." << endl;
 	cerr << "    --nomute: don't mute the game while running tests." << endl;
 	cerr << "    --rng-seed <seed>: every time the pseudo-random number generator is seeded,"
 		" it will be given this value." << endl;
