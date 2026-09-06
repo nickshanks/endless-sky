@@ -41,7 +41,8 @@ public:
 	// double Zoom() const;
 
 	// Step the effect forward.
-	void Move(int steps = 1);
+	void Move();
+	void Move(int steps);
 
 
 private:

@@ -60,6 +60,19 @@ Visual::Visual(const Effect &effect, Point pos, Point vel, Angle facing, Point h
 
 
 // Step the effect forward.
+void Visual::Move()
+{
+	if(lifetime-- <= 0)
+		MarkForRemoval();
+	else
+	{
+		position += velocity;
+		angle += spin;
+	}
+}
+
+
+
 void Visual::Move(int steps)
 {
 	if(lifetime <= 0)

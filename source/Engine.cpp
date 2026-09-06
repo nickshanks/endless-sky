@@ -1938,8 +1938,12 @@ void Engine::CalculateUnpaused(const Ship *flagship, const System *playerSystem)
 	if(updateDraw)
 	{
 		int visualSteps = visualSkipSteps + 1;
-		for(Visual &visual : visuals)
-			visual.Move(visualSteps);
+		if(visualSteps == 1)
+			for(Visual &visual : visuals)
+				visual.Move();
+		else
+			for(Visual &visual : visuals)
+				visual.Move(visualSteps);
 		Prune(visuals);
 		visualSkipSteps = 0;
 	}
