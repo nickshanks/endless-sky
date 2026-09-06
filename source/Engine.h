@@ -225,6 +225,7 @@ private:
 	std::vector<Weather> activeWeather;
 	std::list<std::shared_ptr<Flotsam>> flotsam;
 	std::vector<Visual> visuals;
+	int visualSkipSteps = 0;
 	AsteroidField asteroids;
 
 	// New objects created within the latest step:

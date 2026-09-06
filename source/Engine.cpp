@@ -1641,6 +1641,7 @@ void Engine::EnterSystem()
 
 	projectiles.clear();
 	visuals.clear();
+	visualSkipSteps = 0;
 	flotsam.clear();
 	// Cancel any projectiles, visuals, or flotsam created by ships this step.
 	newProjectiles.clear();
@@ -1930,13 +1931,20 @@ void Engine::CalculateUnpaused(const Ship *flagship, const System *playerSystem)
 
 	// Step the weather.
 	for(Weather &weather : activeWeather)
-		weather.Step(newVisuals, flagship ? flagship->Position() : camera.Center());
+		weather.Step(newVisuals, flagship ? flagship->Position() : camera.Center(), updateDraw);
 	Prune(activeWeather);
 
 	// Move the visuals.
-	for(Visual &visual : visuals)
-		visual.Move();
-	Prune(visuals);
+	if(updateDraw)
+	{
+		int visualSteps = visualSkipSteps + 1;
+		for(Visual &visual : visuals)
+			visual.Move(visualSteps);
+		Prune(visuals);
+		visualSkipSteps = 0;
+	}
+	else
+		++visualSkipSteps;
 
 	// Perform various minor actions.
 	SpawnFleets();

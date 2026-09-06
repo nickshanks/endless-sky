@@ -19,6 +19,8 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "Effect.h"
 #include "Random.h"
 
+#include <algorithm>
+
 using namespace std;
 
 
@@ -58,13 +60,17 @@ Visual::Visual(const Effect &effect, Point pos, Point vel, Angle facing, Point h
 
 
 // Step the effect forward.
-void Visual::Move()
+void Visual::Move(int steps)
 {
-	if(lifetime-- <= 0)
+	if(lifetime <= 0)
 		MarkForRemoval();
 	else
 	{
-		position += velocity;
-		angle += spin;
+		int moveSteps = min(steps, lifetime);
+		position += moveSteps * velocity;
+		angle += Angle(moveSteps * spin.Degrees());
+		lifetime -= steps;
+		if(lifetime < 0)
+			MarkForRemoval();
 	}
 }
