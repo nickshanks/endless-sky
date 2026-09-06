@@ -9,8 +9,8 @@ without Xvfb.
 From the repository root:
 
 ```sh
-./tests/performance/run_tests_macos.sh ./build/macos-arm/Debug/endless-sky . "Afterburner-flight"
-./tests/performance/run_benchmarks_macos.sh ./build/macos-arm/Debug/endless-sky . fast-forward 3600 1
+./tests/performance/run_tests_macos.sh ./build/macos-arm/Release/endless-sky . "Afterburner-flight"
+./tests/performance/run_benchmarks_macos.sh ./build/macos-arm/Release/endless-sky . fast-forward 3600 1
 ```
 
 `run_tests_macos.sh` arguments are:
