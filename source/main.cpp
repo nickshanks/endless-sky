@@ -424,50 +424,44 @@ int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkT
 		sort(samples.begin(), samples.end(), Better);
 		return samples[samples.size() / 2];
 	};
-	auto PrintSample = [&](const Result &result, const string &indent, bool trailingComma) {
-		cout << indent << "{\n";
-		cout << indent << "  \"ticks\": " << result.ticks << ",\n";
-		cout << indent << "  \"drawPrepTicks\": " << result.drawPrepTicks << ",\n";
-		cout << indent << "  \"wallMs\": " << Milliseconds(result.wallTime) << ",\n";
-		cout << indent << "  \"engineMs\": " << Milliseconds(result.engineTime) << ",\n";
-		cout << indent << "  \"waitMs\": " << Milliseconds(result.waitTime) << ",\n";
-		cout << indent << "  \"ticksPerSecond\": " << TicksPerSecond(result) << "\n";
-		cout << indent << "}" << (trailingComma ? "," : "") << "\n";
+	// Metrics are emitted as YAML so that they can be embedded directly in a TAP v14 YAML block.
+	auto PrintSample = [&](const Result &result, const string &indent, const string &firstPrefix) {
+		cout << indent << firstPrefix << "ticks: " << result.ticks << "\n";
+		cout << indent << "  drawPrepTicks: " << result.drawPrepTicks << "\n";
+		cout << indent << "  wallMs: " << Milliseconds(result.wallTime) << "\n";
+		cout << indent << "  engineMs: " << Milliseconds(result.engineTime) << "\n";
+		cout << indent << "  waitMs: " << Milliseconds(result.waitTime) << "\n";
+		cout << indent << "  ticksPerSecond: " << TicksPerSecond(result) << "\n";
 	};
-	auto PrintScenario = [&](const string &name, const Scenario &scenario, bool trailingComma) {
-		cout << "  \"" << name << "\": {\n";
-		cout << "    \"best\":\n";
-		PrintSample(Best(scenario.samples), "      ", true);
-		cout << "    \"median\":\n";
-		PrintSample(Median(scenario.samples), "      ", true);
-		cout << "    \"samples\": [\n";
-		for(size_t i = 0; i < scenario.samples.size(); ++i)
-			PrintSample(scenario.samples[i], "      ", i + 1 < scenario.samples.size());
-		cout << "    ]\n";
-		cout << "  }" << (trailingComma ? "," : "") << "\n";
+	auto PrintScenario = [&](const string &name, const Scenario &scenario) {
+		cout << name << ":\n";
+		cout << "  best:\n";
+		PrintSample(Best(scenario.samples), "  ", "  ");
+		cout << "  median:\n";
+		PrintSample(Median(scenario.samples), "  ", "  ");
+		cout << "  samples:\n";
+		for(const Result &sample : scenario.samples)
+			PrintSample(sample, "  ", "- ");
 	};
 	auto PrintComparison = [&]() {
-		cout << "  \"comparison\": {\n";
-		cout << "    \"fastForwardToNormalSameTicksBest\": "
-			<< TicksPerSecond(Best(fastForward.samples)) / TicksPerSecond(Best(normalSameTicks.samples)) << ",\n";
-		cout << "    \"fastForwardToNormalSameTicksMedian\": "
+		cout << "comparison:\n";
+		cout << "  fastForwardToNormalSameTicksBest: "
+			<< TicksPerSecond(Best(fastForward.samples)) / TicksPerSecond(Best(normalSameTicks.samples)) << "\n";
+		cout << "  fastForwardToNormalSameTicksMedian: "
 			<< TicksPerSecond(Median(fastForward.samples)) / TicksPerSecond(Median(normalSameTicks.samples)) << "\n";
-		cout << "  }\n";
 	};
 
 	cout << fixed << setprecision(3);
-	cout << "{\n";
-	cout << "  \"benchmark\": \"" << benchmarkName << "\",\n";
-	cout << "  \"scenario\": \"" << saveName << "\",\n";
-	cout << "  \"seed\": " << benchmarkSeed << ",\n";
-	cout << "  \"baseTicks\": " << benchmarkTicks << ",\n";
-	cout << "  \"warmups\": " << benchmarkWarmups << ",\n";
-	cout << "  \"repeats\": " << benchmarkRepeats << ",\n";
-	PrintScenario("normal", normal, true);
-	PrintScenario("normalSameTicks", normalSameTicks, true);
-	PrintScenario("fastForward", fastForward, true);
+	cout << "benchmark: \"" << benchmarkName << "\"\n";
+	cout << "scenario: \"" << saveName << "\"\n";
+	cout << "seed: " << benchmarkSeed << "\n";
+	cout << "baseTicks: " << benchmarkTicks << "\n";
+	cout << "warmups: " << benchmarkWarmups << "\n";
+	cout << "repeats: " << benchmarkRepeats << "\n";
+	PrintScenario("normal", normal);
+	PrintScenario("normalSameTicks", normalSameTicks);
+	PrintScenario("fastForward", fastForward);
 	PrintComparison();
-	cout << "}\n";
 
 	return 0;
 }
@@ -836,7 +830,7 @@ void PrintHelp()
 		" and the latest save game, and inspect data for errors." << endl;
 	cerr << "    --tests: print table of available tests, then exit." << endl;
 	cerr << "    --test <name>: run given test from resources directory." << endl;
-	cerr << "    --benchmark <name>: run a headless benchmark and print JSON metrics." << endl;
+	cerr << "    --benchmark <name>: run a headless benchmark and print YAML metrics." << endl;
 	cerr << "    --benchmark-ticks <number>: sets the baseline tick count for --benchmark." << endl;
 	cerr << "    --benchmark-seed <seed>: sets the pseudo-random seed for --benchmark." << endl;
 	cerr << "    --benchmark-repeats <number>: sets the measured repeat count for --benchmark." << endl;

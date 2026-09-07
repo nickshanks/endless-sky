@@ -29,9 +29,10 @@ From the repository root:
 6. Optional measured repeat count.
 7. Optional unmeasured warmup count.
 
-`run_tests_macos.sh` emits TAP version 13 output and includes elapsed wall-clock
+`run_tests_macos.sh` emits TAP version 14 output and includes elapsed wall-clock
 time for each selected scenario as diagnostic lines. `run_benchmarks_macos.sh`
-runs in-process headless benchmarks and prints JSON metrics.
+runs in-process headless benchmarks and prints YAML metrics, which can be
+embedded directly in a TAP version 14 YAML block.
 
 `run_benchmarks_macos.sh` accepts optional benchmark name, tick count, and random
 seed, repeat count, and warmup count arguments. It defaults to `fast-forward`,
@@ -55,7 +56,7 @@ save, launches from Earth, and measures serialized engine ticks in two modes:
 normal ticks with draw preparation every tick, a same-simulated-duration normal
 run, and fast-forward ticks with draw preparation every third tick. It reports
 simulated ticks, draw-preparation ticks, wall time, engine calculation time, wait
-time, and ticks per second. The JSON output includes every sample plus best and
+time, and ticks per second. The YAML output includes every sample plus best and
 median summaries for each mode, and ratios comparing fast-forward throughput to
 the same-simulated-duration normal run.
 
