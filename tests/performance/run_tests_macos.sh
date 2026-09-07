@@ -24,21 +24,27 @@ TEST_FILTER="${3:-.}"
 ES_CONFIG_TEMPLATE_PATH="${RESOURCES}/tests/integration/config"
 export MallocNanoZone=0
 
-echo "TAP version 13"
+echo "TAP version 14"
 echo "# Endless Sky macOS performance scenario runner"
 echo "# executable: ${ES_EXEC_PATH}"
 echo "# resources: ${RESOURCES}"
 echo "# filter: ${TEST_FILTER}"
 
+if [ ! -f "${ES_EXEC_PATH}" ]; then
+	echo "1..0"
+	echo "Bail out! Endless Sky executable not found."
+	exit 1
+fi
+
 if [ ! -x "${ES_EXEC_PATH}" ]; then
-	echo "1..1"
-	echo "not ok 1 Endless Sky executable not found or not executable"
+	echo "1..0"
+	echo "Bail out! Endless Sky executable not executable."
 	exit 1
 fi
 
 if [ ! -d "${ES_CONFIG_TEMPLATE_PATH}" ]; then
-	echo "1..1"
-	echo "not ok 1 integration config template not found"
+	echo "1..0"
+	echo "Bail out! Integration config template not found."
 	exit 1
 fi
 
@@ -48,8 +54,8 @@ unset IFS
 
 NUM_TOTAL=${#TESTS[@]}
 if [ ${NUM_TOTAL} -eq 0 ]; then
-	echo "1..1"
-	echo "not ok 1 no tests matched filter"
+	echo "1..0"
+	echo "Bail out! No tests matched filter."
 	exit 1
 fi
 
