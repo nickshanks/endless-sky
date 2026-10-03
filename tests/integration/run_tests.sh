@@ -131,7 +131,7 @@ ES_EXEC_PATH="$1"
 RESOURCES="$2"
 ES_CONFIG_TEMPLATE_PATH="${RESOURCES}/tests/integration/config"
 
-echo "TAP version 13"
+echo "TAP version 14"
 echo "# ***********************************************"
 echo "# ***         ES Autotest-runner              ***"
 echo "# ***********************************************"
@@ -140,29 +140,29 @@ print_graphics_data
 
 if [ ! -f "${ES_EXEC_PATH}" ]
 then
-  echo "1..1"
-  echo "not ok 1 Endless sky executable not found."
+  echo "1..0"
+  echo "Bail out! Endless Sky executable not found."
   exit 1
 fi
 
 if [ ! -x "${ES_EXEC_PATH}" ]
 then
-  echo "1..1"
-  echo "not ok 1 Endless sky executable not executable. (did you use artifact downloading?)"
+  echo "1..0"
+  echo "Bail out! Endless Sky executable not executable. (Did you use artifact downloading?)"
   exit 1
 fi
 
 # Set separator to newline (in case tests have spaces in their name)
 IFS=$'\n'
-
 TESTS=$("${ES_EXEC_PATH}" --tests --resources "${RESOURCES}" --config "${ES_CONFIG_TEMPLATE_PATH}")
+unset IFS
+
 TESTS_OK=($(echo "${TESTS}")) || true
 NUM_TOTAL=${#TESTS_OK[@]}
-
 if [ ${NUM_TOTAL} -eq 0 ]
 then
-  echo "1..1"
-  echo "not ok 1 Could not find any testcases"
+  echo "1..0"
+  echo "Bail out! Could not find any test cases."
   exit 1
 fi
 
@@ -172,13 +172,12 @@ echo "1..${NUM_TOTAL}"
 RUNNING_TEST=1
 NUM_FAILED=0
 NUM_OK=0
-for TEST in ${TESTS_OK[@]}
-do
+for TEST in ${TESTS_OK[@]}; do
   if run_test "${TEST}"; then
     NUM_OK=$((NUM_OK + 1))
     TEST_RESULT="ok"
   elif [ $? -eq 2 ]; then
-    echo "# Bail out! Encountered serious issue that prevents further testing."
+    echo "Bail out! Encountered serious issue that prevents further testing."
     exit 1
   else
     NUM_FAILED=$((NUM_FAILED + 1))
@@ -188,13 +187,10 @@ do
   RUNNING_TEST=$(( ${RUNNING_TEST} + 1 ))
 done
 
-unset IFS
 echo ""
 echo "# tests ${NUM_TOTAL}"
-echo "# pass ${NUM_OK}"
-if [ ${NUM_FAILED} -ne 0 ]
-then
-  echo "# failed ${NUM_FAILED}"
+echo "# failed ${NUM_FAILED}"
+
+if [ ${NUM_FAILED} -ne 0 ]; then
   exit 1
 fi
-exit 0

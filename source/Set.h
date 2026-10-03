@@ -35,6 +35,7 @@ public:
 	const Type *Find(const std::string &name) const;
 
 	bool Has(const std::string &name) const { return data.contains(name); }
+	void Erase(const std::string &name) { data.erase(name); }
 
 	typename std::map<std::string, Type>::iterator begin() { return data.begin(); }
 	typename std::map<std::string, Type>::const_iterator begin() const { return data.begin(); }

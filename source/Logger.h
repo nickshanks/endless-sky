@@ -50,5 +50,6 @@ public:
 
 public:
 	static void SetLogCallback(std::function<void(const std::string &message, Level)> callback);
+	static void SetQuiet(bool quiet);
 	static void Log(const std::string &message, Level level);
 };

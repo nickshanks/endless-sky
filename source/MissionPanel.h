@@ -70,6 +70,7 @@ private:
 		bool separateDeadlineOrPossible = false) const;
 	void DrawMissionInfo();
 	void DrawTooltips();
+	int AvailableMissionIndex(int y) const;
 
 	bool CanAccept() const;
 	void Accept(bool force = false);

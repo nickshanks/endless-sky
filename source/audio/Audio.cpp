@@ -444,9 +444,13 @@ void Audio::Quit()
 	players.clear();
 	loopingPlayers.clear();
 	musicPlayer.reset();
-
+	// Keep the loaded sound table intact so that any Effect/Visual objects that
+	// still hold a pointer to a Sound continue to reference valid memory across a
+	// test reset. Reinitialization refreshes the same sound entries in-place.
+	// sounds.clear();
 	// Free the memory buffers for all the sound resources.
-	sounds.clear();
+	// The sound objects are intentionally retained across a reset so that any
+	// live Sound* references remain valid while the same content is reloaded.
 
 	// Close the connection to the OpenAL library.
 	if(context)

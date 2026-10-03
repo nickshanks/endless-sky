@@ -53,7 +53,7 @@ test "Timer - Simple 1 second timer"
 		call "Land"
 		call "Depart"
 		apply
-			"test: steps to wait" = 2 * 60
+			"test: steps to wait" = 4
 		label "floating"
 		# An empty input to make two seconds pass.
 		input

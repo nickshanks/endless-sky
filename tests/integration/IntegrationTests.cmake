@@ -1,50 +1,52 @@
 set(ES_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/integration/config")
+set(INTEGRATION_BATCH_COUNT 4)
 
-# Get all the tests to run.
+# Get the test names once while generating the CTest manifest, then distribute
+# independent cases round-robin across a small number of game processes.
 execute_process(
 	COMMAND ${ES} --config "${ES_CONFIG}" --tests
 	OUTPUT_VARIABLE INTEGRATION_TESTS
 	ERROR_QUIET
 )
-# Delete the errors.txt file if any. This file is generated if there were
-# parse errors, but we don't care about those.
-file(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/integration/config/errors.txt")
-
+string(STRIP "${INTEGRATION_TESTS}" INTEGRATION_TESTS)
 string(REPLACE "\n" ";" INTEGRATION_TESTS_LIST "${INTEGRATION_TESTS}")
-set(TEST_CONFIGS "${BINARY_PATH}/integration_configs")
 
-# Add each test as CTest.
-foreach(test ${INTEGRATION_TESTS_LIST})
-	# Launches the integration tests in release mode: In the background and as fast as possible.
-	set(ADD_TEST
-	"add_test([==[${test}]==] \"${CMAKE_COMMAND}\"
-		\"-DES=${ES}\"
-		\"-DTEST_CONFIGS=${TEST_CONFIGS}\"
-		\"-Dtest=${test}\"
-		\"-DRESOURCE_PATH=${RESOURCE_PATH}\"
-		\"-DES_CONFIG=${ES_CONFIG}\"
-		-P \"${CMAKE_SOURCE_DIR}/integration/RunIntegrationTest.cmake\")")
-		set(SET_TEST_PROPS
-	"set_tests_properties([==[${test}]==] PROPERTIES
-		WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\"
-		TIMEOUT 120
-		LABELS integration)")
+list(LENGTH INTEGRATION_TESTS_LIST INTEGRATION_TEST_COUNT)
+if(INTEGRATION_TEST_COUNT LESS INTEGRATION_BATCH_COUNT)
+	set(INTEGRATION_BATCH_COUNT ${INTEGRATION_TEST_COUNT})
+endif()
 
-	# Launches the integration tests in debug mode, so that they can be followed.
-	set(ADD_TEST_DEBUG
-	"add_test([==[[debug] ${test}]==] \"${CMAKE_COMMAND}\"
-		\"-DES=${ES}\"
-		\"-DTEST_CONFIGS=${TEST_CONFIGS}\"
-		\"-Dtest=${test}\"
-		\"-DRESOURCE_PATH=${RESOURCE_PATH}\"
-		\"-DES_CONFIG=${ES_CONFIG}\"
-		-DDEBUG=--debug
-		-P \"${CMAKE_SOURCE_DIR}/integration/RunIntegrationTest.cmake\")")
-	set(SET_TEST_PROPS_DEBUG
-"set_tests_properties([==[[debug] ${test}]==] PROPERTIES
+math(EXPR LAST_BATCH "${INTEGRATION_BATCH_COUNT} - 1")
+foreach(batch RANGE ${LAST_BATCH})
+	file(REMOVE "${BINARY_PATH}/integration-tests-${batch}.txt")
+endforeach()
+
+math(EXPR LAST_TEST_INDEX "${INTEGRATION_TEST_COUNT} - 1")
+foreach(test_index RANGE ${LAST_TEST_INDEX})
+	list(GET INTEGRATION_TESTS_LIST ${test_index} test)
+	math(EXPR batch "${test_index} % ${INTEGRATION_BATCH_COUNT}")
+	file(APPEND "${BINARY_PATH}/integration-tests-${batch}.txt" "${test}\n")
+endforeach()
+
+set(TEST_SCRIPT "")
+foreach(batch RANGE ${LAST_BATCH})
+	set(TEST_CONFIG_PARENT "${BINARY_PATH}/integration-config-${batch}")
+	set(TEST_CONFIG "${TEST_CONFIG_PARENT}/config")
+	set(TEST_LIST "${BINARY_PATH}/integration-tests-${batch}.txt")
+	string(APPEND TEST_SCRIPT
+"add_test(\"integration-${batch}\" \"${CMAKE_COMMAND}\"
+	\"-DES=${ES}\"
+	\"-DTEST_CONFIG_PARENT=${TEST_CONFIG_PARENT}\"
+	\"-DTEST_CONFIG=${TEST_CONFIG}\"
+	\"-DTEST_LIST=${TEST_LIST}\"
+	\"-DRESOURCE_PATH=${RESOURCE_PATH}\"
+	\"-DES_CONFIG=${ES_CONFIG}\"
+	-P \"${CMAKE_CURRENT_SOURCE_DIR}/integration/RunIntegrationBatch.cmake\")
+set_tests_properties(\"integration-${batch}\" PROPERTIES
 	WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\"
-	LABELS integration-debug)")
-	set(TEST_SCRIPT ${TEST_SCRIPT}\n${ADD_TEST}\n${SET_TEST_PROPS}\n${ADD_TEST_DEBUG}\n${SET_TEST_PROPS_DEBUG}\n)
+	TIMEOUT 600
+	LABELS integration)
+")
 endforeach()
 
 file(WRITE "${BINARY_PATH}/IntegrationTests_tests.cmake" "${TEST_SCRIPT}")

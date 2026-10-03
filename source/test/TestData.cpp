@@ -23,13 +23,33 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "../Mission.h"
 #include "../UniverseObjects.h"
 
+#include <map>
+
 using namespace std;
+
+namespace {
+	map<string, Mission> replacedMissions;
+	set<string> createdMissions;
+}
 
 
 
 const string &TestData::Name() const
 {
 	return dataSetName;
+}
+
+
+
+void TestData::ResetInjectedMissions()
+{
+	Set<Mission> &missions = GameData::Objects().missions;
+	for(auto &[name, mission] : replacedMissions)
+		*missions.Get(name) = std::move(mission);
+	for(const string &name : createdMissions)
+		missions.Erase(name);
+	replacedMissions.clear();
+	createdMissions.clear();
 }
 
 
@@ -136,7 +156,18 @@ bool TestData::InjectMission(const ConditionsStore *playerConditions,
 	const DataNode &dataNode = *nodePtr;
 	for(const DataNode &node : dataNode)
 		if(node.Token(0) == "mission" && node.Size() > 1)
-			GameData::Objects().missions.Get(node.Token(1))->Load(node, playerConditions, visitedSystems, visitedPlanets);
+		{
+			const string &missionName = node.Token(1);
+			Set<Mission> &missions = GameData::Objects().missions;
+			if(!replacedMissions.contains(missionName) && !createdMissions.contains(missionName))
+			{
+				if(missions.Find(missionName))
+					replacedMissions.emplace(missionName, std::move(*missions.Get(missionName)));
+				else
+					createdMissions.insert(missionName);
+			}
+			missions.Get(missionName)->Load(node, playerConditions, visitedSystems, visitedPlanets);
+		}
 
 	return true;
 }

@@ -494,7 +494,8 @@ void Test::Step(TestContext &context, PlayerInfo &player, Command &commandToGive
 				break;
 			case TestStep::Type::DEBUG:
 				// Print debugging output directly to the terminal.
-				cout << stepToRun.nameOrLabel << endl;
+				// TAP comments are allowed as diagnostics while keeping the stream valid.
+				cout << "# " << stepToRun.nameOrLabel << endl;
 				cout.flush();
 				++(context.callstack.back().step);
 				break;

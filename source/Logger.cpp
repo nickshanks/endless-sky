@@ -32,6 +32,7 @@ using namespace std;
 namespace {
 	function<void(const string &message, Logger::Level)> logCallback = nullptr;
 	mutex logMutex;
+	bool quietLogging = false;
 }
 
 
@@ -73,13 +74,21 @@ void Logger::SetLogCallback(function<void(const string &message, Level)> callbac
 
 
 
+void Logger::SetQuiet(bool quiet)
+{
+	quietLogging = quiet;
+}
+
+
+
 void Logger::Log(const string &message, Level level)
 {
 	lock_guard<mutex> lock(logMutex);
 	string formatted = Format::TimestampString(chrono::system_clock::now(), true)
 		+ " | " + static_cast<char>(level) + " | " + message;
-	(level == Level::INFO ? cout : cerr) << formatted << endl;
-	// Perform additional logging through callback if any is registered.
 	if(logCallback)
 		logCallback(formatted, level);
+	if(quietLogging)
+		return;
+	(level == Level::INFO ? cout : cerr) << formatted << endl;
 }
