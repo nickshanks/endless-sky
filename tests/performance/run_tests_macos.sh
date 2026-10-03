@@ -48,47 +48,51 @@ if [ ! -d "${ES_CONFIG_TEMPLATE_PATH}" ]; then
 	exit 1
 fi
 
-IFS=$'\n'
-TESTS=($("${ES_EXEC_PATH}" --tests --resources "${RESOURCES}" --config "${ES_CONFIG_TEMPLATE_PATH}" | grep -E "${TEST_FILTER}" || true))
-unset IFS
+TEST_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/endless-sky-perf.XXXXXX")
+cp -R "${ES_CONFIG_TEMPLATE_PATH}/." "${TEST_CONFIG}"
+GAME_PID=""
+cleanup() {
+	if [ -n "${GAME_PID}" ]; then
+		kill "${GAME_PID}" 2>/dev/null || true
+		wait "${GAME_PID}" 2>/dev/null || true
+	fi
+	rm -rf "${TEST_CONFIG}"
+}
+trap cleanup EXIT
+trap 'exit 143' HUP INT TERM
 
-NUM_TOTAL=${#TESTS[@]}
-if [ ${NUM_TOTAL} -eq 0 ]; then
-	echo "1..0"
-	echo "Bail out! No tests matched filter."
-	exit 1
+SUITE_START=$(now_seconds)
+if [ "${TEST_FILTER}" = "." ]; then
+	echo "# Running all integration tests in one game process."
+	TEST_ARGUMENT=all
+else
+	echo "# Discovering integration tests matching: ${TEST_FILTER}"
+	TESTS=()
+	while IFS= read -r test_name; do
+		TESTS+=("${test_name}")
+	done < <("${ES_EXEC_PATH}" --tests --resources "${RESOURCES}" --config "${TEST_CONFIG}" | grep -E "${TEST_FILTER}" || true)
+
+	NUM_TOTAL=${#TESTS[@]}
+	if [ ${NUM_TOTAL} -eq 0 ]; then
+		echo "1..0"
+		echo "Bail out! No tests matched filter."
+		exit 1
+	fi
+
+	TEST_LIST_FILE="${TEST_CONFIG}/test-list.txt"
+	printf '%s\n' "${TESTS[@]}" > "${TEST_LIST_FILE}"
+	TEST_ARGUMENT="${TEST_LIST_FILE}"
 fi
 
-echo "1..${NUM_TOTAL}"
-
-NUM_FAILED=0
-for ((i = 0; i < NUM_TOTAL; ++i)); do
-	TEST_NAME="${TESTS[$i]}"
-	TEST_NUMBER=$((i + 1))
-	TEST_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/endless-sky-perf.XXXXXX")
-	TEST_OUTPUT="${TEST_CONFIG}/output.txt"
-
-	cp -R "${ES_CONFIG_TEMPLATE_PATH}/." "${TEST_CONFIG}"
-
-	START=$(now_seconds)
-	if "${ES_EXEC_PATH}" --resources "${RESOURCES}" --config "${TEST_CONFIG}" --test "${TEST_NAME}" > "${TEST_OUTPUT}" 2>&1; then
-		END=$(now_seconds)
-		echo "ok ${TEST_NUMBER} ${TEST_NAME}"
-		echo "# elapsed_ms: $(elapsed_ms "${START}" "${END}")"
-		rm -rf "${TEST_CONFIG}"
-	else
-		END=$(now_seconds)
-		NUM_FAILED=$((NUM_FAILED + 1))
-		echo "not ok ${TEST_NUMBER} ${TEST_NAME}"
-		echo "# elapsed_ms: $(elapsed_ms "${START}" "${END}")"
-		echo "# temporary_config: ${TEST_CONFIG}"
-		sed 's/^/#     /' "${TEST_OUTPUT}"
-	fi
-done
-
-echo "# tests ${NUM_TOTAL}"
-echo "# failed ${NUM_FAILED}"
-
-if [ ${NUM_FAILED} -ne 0 ]; then
+"${ES_EXEC_PATH}" --resources "${RESOURCES}" --config "${TEST_CONFIG}" --tests "${TEST_ARGUMENT}" &
+GAME_PID=$!
+if wait "${GAME_PID}"; then
+	GAME_PID=""
+	SUITE_END=$(now_seconds)
+	echo "# integration_suite_elapsed_ms: $(elapsed_ms "${SUITE_START}" "${SUITE_END}")"
+else
+	GAME_PID=""
+	SUITE_END=$(now_seconds)
+	echo "# integration_suite_elapsed_ms: $(elapsed_ms "${SUITE_START}" "${SUITE_END}")"
 	exit 1
 fi

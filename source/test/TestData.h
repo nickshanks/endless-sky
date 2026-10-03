@@ -32,6 +32,7 @@ class TestData {
 public:
 	const std::string &Name() const;
 	void Load(const DataNode &node, const std::filesystem::path &sourceDataFilePath);
+	static void ResetInjectedMissions();
 	// Function to inject the test-data into the game or into the game's
 	// environment.
 	bool Inject(const ConditionsStore *playerConditions, const std::set<const System *> *visitedSystems,

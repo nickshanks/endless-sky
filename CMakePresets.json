@@ -605,6 +605,7 @@
 				}
 			},
 			"execution": {
+				"jobs": 4,
 				"timeout": 120
 			}
 		},

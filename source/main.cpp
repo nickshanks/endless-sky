@@ -64,8 +64,11 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <map>
 
 #include <cassert>
-#include <future>
 #include <exception>
+#include <fstream>
+#include <future>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -88,10 +91,51 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 using namespace std;
 
+namespace {
+	string Trim(const string &value)
+	{
+		const size_t first = value.find_first_not_of(" \t\r\n");
+		if(first == string::npos)
+			return {};
+		const size_t last = value.find_last_not_of(" \t\r\n");
+		return value.substr(first, last - first + 1);
+	}
+
+	vector<string> ParseTestList(const string &value)
+	{
+		vector<string> tests;
+		const filesystem::path path(value);
+		if(filesystem::exists(path) && filesystem::is_regular_file(path))
+		{
+			ifstream input(path);
+			if(input)
+			{
+				string line;
+				while(getline(input, line))
+				{
+					string trimmed = Trim(line);
+					if(trimmed.empty() || trimmed[0] == '#')
+						continue;
+					tests.push_back(trimmed);
+				}
+			}
+			return tests;
+		}
+
+		istringstream stream(value);
+		string token;
+		while(stream >> token)
+			tests.push_back(token);
+		return tests;
+	}
+}
+
 void PrintHelp();
 void PrintVersion();
 int RunBenchmark(PlayerInfo &player, const std::string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed,
 	int benchmarkRepeats, int benchmarkWarmups);
+int RunTestBatch(PlayerInfo &player, TaskQueue &queue, const Conversation &conversation,
+	const vector<string> &testsToRun, bool debugMode);
 void GameLoop(PlayerInfo &player, TaskQueue &queue, const Conversation &conversation,
 	const string &testToRun, bool debugMode);
 Conversation LoadConversation(const PlayerInfo &player);
@@ -118,6 +162,8 @@ int main(int argc, char *argv[])
 	bool noTestMute = false;
 	uint64_t nWorkerThreads = 0;
 	string testToRunName;
+	vector<string> testsToRun;
+	bool runAllTests = false;
 	string benchmarkName;
 	int benchmarkTicks = 3600;
 	uint64_t benchmarkSeed = 1;
@@ -167,7 +213,18 @@ int main(int argc, char *argv[])
 		else if(arg == "--benchmark-warmups" && *++it)
 			benchmarkWarmups = stoi(*it);
 		else if(arg == "--tests")
-			printTests = true;
+		{
+			if(it[1] && it[1][0] != '-')
+			{
+				const string value = *++it;
+				if(value == "all")
+					runAllTests = true;
+				else
+					testsToRun = ParseTestList(value);
+			}
+			else
+				printTests = true;
+		}
 		else if(arg == "--nomute")
 			noTestMute = true;
 		else if(arg == "--rngseed" && *++it)
@@ -182,11 +239,13 @@ int main(int argc, char *argv[])
 	Files::Init(argv);
 
 	// Whether we are running an integration test.
-	const bool isTesting = !testToRunName.empty();
+	const bool isTesting = !testToRunName.empty() || !testsToRun.empty() || runAllTests;
 	const bool isBenchmark = !benchmarkName.empty();
 	bool isConsoleOnly = loadOnly || printTests || printData;
+	const bool suppressLogs = isConsoleOnly || isTesting || isBenchmark;
 
-	Logger::Session logSession{isConsoleOnly || isTesting || isBenchmark};
+	Logger::SetQuiet(suppressLogs);
+	Logger::Session logSession{suppressLogs};
 
 	try {
 		// Load plugin settings and preferences before game data.
@@ -204,11 +263,23 @@ int main(int argc, char *argv[])
 		if(isConsoleOnly || checkAssets || isTesting || isBenchmark)
 			dataFuture.wait();
 
-		if(isTesting && !GameData::Tests().Has(testToRunName))
+		if(runAllTests)
+			for(const auto &it : GameData::Tests())
+				if(it.second.GetStatus() != Test::Status::PARTIAL
+						&& it.second.GetStatus() != Test::Status::BROKEN)
+					testsToRun.push_back(it.second.Name());
+
+		if(!testToRunName.empty() && !GameData::Tests().Has(testToRunName))
 		{
 			Logger::Log("Test \"" + testToRunName + "\" not found.", Logger::Level::ERROR);
 			return 1;
 		}
+		for(const string &testName : testsToRun)
+			if(!GameData::Tests().Has(testName))
+			{
+				Logger::Log("Test \"" + testName + "\" not found.", Logger::Level::ERROR);
+				return 1;
+			}
 
 		if(printData)
 		{
@@ -232,6 +303,23 @@ int main(int argc, char *argv[])
 
 			int result = RunBenchmark(player, benchmarkName, benchmarkTicks, benchmarkSeed,
 				benchmarkRepeats, benchmarkWarmups);
+			Audio::Quit();
+			GameWindow::Quit();
+			return result;
+		}
+
+		if(!testsToRun.empty())
+		{
+			GameData::FinishLoading();
+			if(!GameWindow::Init(isTesting && !debugMode))
+				return 1;
+			GameData::LoadSettings();
+			Audio::Init(GameData::Sources());
+			if(!noTestMute)
+				Audio::SetVolume(0, SoundCategory::MASTER);
+			CustomEvents::Init();
+
+			int result = RunTestBatch(player, queue, conversation, testsToRun, debugMode);
 			Audio::Quit();
 			GameWindow::Quit();
 			return result;
@@ -327,6 +415,76 @@ int main(int argc, char *argv[])
 }
 
 
+
+int RunTestBatch(PlayerInfo &player, TaskQueue &queue, const Conversation &conversation,
+	const vector<string> &testsToRun, bool debugMode)
+{
+	const vector<filesystem::path> initialSaveFiles = Files::List(Files::Saves());
+	const set<filesystem::path> initialSaves(initialSaveFiles.begin(), initialSaveFiles.end());
+	auto RemoveGeneratedSaves = [&initialSaves]() {
+		for(const filesystem::path &save : Files::List(Files::Saves()))
+			if(!initialSaves.contains(save))
+				filesystem::remove(save);
+	};
+	auto ResetProfiles = []() {
+		PilotProfile::GetProfiles().clear();
+		PilotProfile::LoadProfiles();
+	};
+	auto ResetTestState = [&]() {
+		RemoveGeneratedSaves();
+		ResetProfiles();
+		TestData::ResetInjectedMissions();
+		player.Clear();
+		GameData::Revert();
+		GameData::LoadSettings();
+	};
+
+	const string initializationTest = "Test-Framework - Empty Testcase";
+	auto initializationStart = chrono::steady_clock::now();
+	ResetTestState();
+	GameLoop(player, queue, conversation, initializationTest, debugMode);
+	cout << "# initialization_elapsed_ms: "
+		<< chrono::duration<double, milli>(chrono::steady_clock::now() - initializationStart).count() << "\n";
+	cout.flush();
+
+	cout << "1.." << testsToRun.size() << "\n";
+	int failed = 0;
+	for(size_t i = 0; i < testsToRun.size(); ++i)
+	{
+		const string &testToRunName = testsToRun[i];
+		auto start = chrono::steady_clock::now();
+		try
+		{
+			ResetTestState();
+			GameLoop(player, queue, conversation, testToRunName, debugMode);
+			const double elapsedMs = chrono::duration<double, milli>(chrono::steady_clock::now() - start).count();
+			cout << "ok " << (i + 1) << " " << testToRunName << "\n";
+			cout << "# elapsed_ms: " << elapsedMs << "\n";
+			cout.flush();
+		}
+		catch(Test::known_failure_tag)
+		{
+			const double elapsedMs = chrono::duration<double, milli>(chrono::steady_clock::now() - start).count();
+			cout << "ok " << (i + 1) << " " << testToRunName << "\n";
+			cout << "# elapsed_ms: " << elapsedMs << "\n";
+			cout.flush();
+		}
+		catch(const exception &error)
+		{
+			++failed;
+			const double elapsedMs = chrono::duration<double, milli>(chrono::steady_clock::now() - start).count();
+			cout << "not ok " << (i + 1) << " " << testToRunName << "\n";
+			cout << "# elapsed_ms: " << elapsedMs << "\n";
+			cout << "# error: " << error.what() << "\n";
+			cout.flush();
+			cerr << "# " << error.what() << "\n";
+			cerr.flush();
+		}
+	}
+	cout << "# tests " << testsToRun.size() << "\n";
+	cout << "# failed " << failed << "\n";
+	return failed ? 1 : 0;
+}
 
 int RunBenchmark(PlayerInfo &player, const string &benchmarkName, int benchmarkTicks, uint64_t benchmarkSeed,
 	int benchmarkRepeats, int benchmarkWarmups)
@@ -828,8 +986,8 @@ void PrintHelp()
 	cerr << "    -p, --parse-save: load the most recent saved game and inspect it for content errors." << endl;
 	cerr << "    --parse-assets: load all game data, images, and sounds,"
 		" and the latest save game, and inspect data for errors." << endl;
-	cerr << "    --tests: print table of available tests, then exit." << endl;
-	cerr << "    --test <name>: run given test from resources directory." << endl;
+	cerr << "    --tests [all|<name|file>]: print the available tests or run all tests, a test list file, or an inline list." << endl;
+	cerr << "    --test <name>: run a single test from the resources directory." << endl;
 	cerr << "    --benchmark <name>: run a headless benchmark and print YAML metrics." << endl;
 	cerr << "    --benchmark-ticks <number>: sets the baseline tick count for --benchmark." << endl;
 	cerr << "    --benchmark-seed <seed>: sets the pseudo-random seed for --benchmark." << endl;

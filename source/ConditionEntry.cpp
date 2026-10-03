@@ -136,8 +136,9 @@ void ConditionEntry::ProvidePrefixed(function<int64_t(const ConditionEntry &)> g
 void ConditionEntry::ProvidePrefixed(function<int64_t(const ConditionEntry &)> getFunction,
 	function<void(ConditionEntry &, int64_t)> setFunction)
 {
-	ProvidePrefixed(getFunction);
+	this->getFunction = std::move(getFunction);
 	this->setFunction = std::move(setFunction);
+	this->providingEntry = this;
 }
 
 
@@ -153,8 +154,9 @@ void ConditionEntry::ProvideNamed(function<int64_t(const ConditionEntry &)> getF
 void ConditionEntry::ProvideNamed(function<int64_t(const ConditionEntry &)> getFunction,
 	function<void(ConditionEntry &, int64_t)> setFunction)
 {
-	ProvideNamed(getFunction);
+	this->getFunction = std::move(getFunction);
 	this->setFunction = std::move(setFunction);
+	this->providingEntry = nullptr;
 }
 
 
