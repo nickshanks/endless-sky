@@ -454,7 +454,7 @@ bool MissionPanel::Click(int x, int y, MouseButton button, int clicks)
 			return false;
 		}
 		// Available missions
-		unsigned index = max(0, (y + static_cast<int>(availableScroll) - 36 - Screen::Top()) / 20);
+		unsigned index = AvailableMissionIndex(y);
 		if(index < available.size())
 		{
 			const auto lastAvailableIt = availableIt;
@@ -622,7 +622,7 @@ bool MissionPanel::Hover(int x, int y)
 	dragSide = 0;
 	int oldSort = hoverSort;
 	hoverSort = -1;
-	unsigned index = max(0, (y + static_cast<int>(availableScroll) - 36 - Screen::Top()) / 20);
+	unsigned index = AvailableMissionIndex(y);
 	if(x < Screen::Left() + SIDE_WIDTH)
 	{
 		if(index < available.size())
@@ -666,6 +666,31 @@ bool MissionPanel::Scroll(double dx, double dy)
 void MissionPanel::Resize()
 {
 	ResizeTextArea();
+}
+
+
+
+int MissionPanel::AvailableMissionIndex(int y) const
+{
+	int offset = y + static_cast<int>(availableScroll) - 36 - Screen::Top();
+	if(player.ShouldSortSeparateDeadline() || player.ShouldSortSeparatePossible())
+	{
+		int visibleIndex = 0;
+		for(const Mission &mission : available)
+		{
+			if(!mission.IsVisible())
+				continue;
+			if((player.ShouldSortSeparateDeadline() && mission.Deadline())
+					|| (player.ShouldSortSeparatePossible() && !mission.CanAccept(player)))
+			{
+				if(offset >= visibleIndex * 20)
+					offset -= 8;
+				break;
+			}
+			++visibleIndex;
+		}
+	}
+	return max(0, offset / 20);
 }
 
 
